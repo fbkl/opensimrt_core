@@ -8,6 +8,7 @@
 #include <Common/TimeSeriesTable.h>
 #include <message_filters/subscriber.h>
 #include <Ros/include/saver_node.h>
+#include <OpenSim/Simulation/Model/Model.h>
 
 namespace Ros
 {
@@ -20,8 +21,12 @@ namespace Ros
 			size_t xput_size;
 //Reshuffler();
 //~Reshuffler();
+			bool autoset_labelsOK();
+			OpenSim::Model * model = nullptr;
 			void set(std::vector<std::string> labels);
 			void get_labels(ros::NodeHandle nh);
+	
+		//Reshuffler(OpenSim::Model * model_): model(model_) {}
 	};
 
 	class CommonNode:public SaverNode
@@ -31,6 +36,8 @@ namespace Ros
 			virtual ~CommonNode() override;
 			bool published_labels_at_least_once = false;
 
+			void setModel(OpenSim::Model * model);
+			OpenSim::Model * model;
 			ros::NodeHandle n;
 			ros::NodeHandle nh{"~"};
 			

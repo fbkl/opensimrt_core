@@ -5,6 +5,9 @@
 #include "ros/ros.h"
 #include <memory>
 
+
+#include "OpenSimUtils.h"
+
 //constructor
 Ros::CommonNode::CommonNode(bool Debug)
 {
@@ -13,8 +16,35 @@ Ros::CommonNode::CommonNode(bool Debug)
 	}
 } 
 
+bool Ros::Reshuffler::autoset_labelsOK()
+{
+	if (!model)	
+		return false;
+				auto columnNames = OpenSimRT::OpenSimUtils::getCoordinateNamesInMultibodyTreeOrder(*model);
+				std::string columnNamesStr = "";
+				for(auto cn:columnNames)
+				{
+					columnNamesStr+=cn+",";
+				}
+
+		ROS_WARN_STREAM(columnNamesStr);
+		xput_size = columnNames.size();
+		if (xput_size == 0)
+			return false;
+		labels = columnNames;
+
+return true;
+
+}
+
+
 void Ros::Reshuffler::get_labels(ros::NodeHandle n)
 {
+	if (autoset_labelsOK())
+		return;
+	
+	ROS_WARN_STREAM("Could not set labels from model info alone or autoset disabled, will try to setup by params and next to listen for external labels service provider");
+
 	ros::Rate r(1);
 	//output_labels = qTable.getColumnLabels();
 	opensimrt_msgs::LabelsSrv l;
@@ -40,6 +70,13 @@ void Ros::Reshuffler::get_labels(ros::NodeHandle n)
 		ROS_INFO_STREAM("Waiting to read input labels from: " << srv_name); 
 		r.sleep();
 	}
+
+}
+
+void Ros::CommonNode::setModel(OpenSim::Model * model)
+{
+	input.model = model;
+	output.model = model;
 
 }
 
