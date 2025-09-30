@@ -24,6 +24,7 @@ file(GLOB applications applications/*.cpp)
 include_directories(include/)
 include_directories(../Common/include/)
 include_directories(../RealTime/include/)
+include_directories( ${catkin_INCLUDE_DIRS})
 
 # dynamic library
 set(target Vicon)

@@ -11,7 +11,8 @@ file(GLOB tests
 
 # dependencies
 include_directories(include/)
-set(DEPENDENCY_LIBRARIES ${OpenSim_LIBRARIES})
+include_directories( ${catkin_INCLUDE_DIRS})
+set(DEPENDENCY_LIBRARIES ${OpenSim_LIBRARIES} ${catkin_LIBRARIES})
 
 # dynamic library
 set(target Common)

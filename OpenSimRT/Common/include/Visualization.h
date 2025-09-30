@@ -32,6 +32,8 @@
 #include <SimTKcommon/internal/DecorationGenerator.h>
 #include <simbody/internal/Visualizer_InputListener.h>
 #include <simbody/internal/common.h>
+#include "ros/ros.h"
+#include "tf2_ros/transform_broadcaster.h"
 
 namespace OpenSimRT {
 
@@ -130,6 +132,8 @@ class Common_API BasicModelVisualizer {
 
     enum class MenuID { SIMULATION }; //// TODO: Add more Menus
     enum class SimMenuItem { QUIT };  //// TODO: Add more functionalities
+		tf2_ros::TransformBroadcaster tf_broadcaster;
+		ros::NodeHandle n;
 };
 
 } // namespace OpenSimRT

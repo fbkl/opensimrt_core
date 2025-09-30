@@ -22,6 +22,7 @@ file(GLOB tests
 include_directories(include/)
 include_directories(include/experimental/)
 include_directories(../Common/include/)
+include_directories( ${catkin_INCLUDE_DIRS})
 set(DEPENDENCY_LIBRARIES ${OpenSim_LIBRARIES} Common)
 
 # dynamic library

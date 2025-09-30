@@ -210,6 +210,17 @@ void BasicModelVisualizer::update(const Vector& q,
 		THROW_EXCEPTION("Shutdown visualizer message received.");
 	}
 #endif
+	const OpenSim::BodySet& bodies = model.getBodySet();
+	for (int i = 0; i < bodies.getSize(); ++i)
+	{
+		const OpenSim::Body& body = bodies.get(i);
+	        const Transform X_GB = model.getSimbodyEngine().getTransform(state, body);
+		//std::cout << body.getName() << ": " << X_GB << std::endl;
+		Vec3 translation = X_GB.p();
+		Quaternion rotation = X_GB.R().convertRotationToQuaternion();
+		std::cout << body.getName() << "translation: " << translation << "rotation:" << rotation << std::endl;
+	}
+
 }
 
 void BasicModelVisualizer::updateReactionForceDecorator(

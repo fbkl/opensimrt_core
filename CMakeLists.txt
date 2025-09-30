@@ -9,7 +9,8 @@ find_package(catkin REQUIRED COMPONENTS
        opensimrt_msgs
        roscpp
        std_msgs
-       tf)
+       tf
+       tf2_ros)
 
 # make this into a catkin package
 catkin_package(INCLUDE_DIRS 
