@@ -123,7 +123,11 @@ class Common_API BasicModelVisualizer {
 
     void refreshModel();
     SimTK::ReferencePtr<FPSDecorator> fps;
+    bool publish_transforms = false;
  private:
+    const OpenSim::BodySet* bodies = nullptr;
+    //const OpenSim::SimbodyEngine* myEngine = nullptr;
+    std_msgs::Header sameHeader;
     OpenSim::Model model;
     SimTK::State state;
     SimTK::ReferencePtr<SimTK::Visualizer> visualizer;
@@ -131,7 +135,7 @@ class Common_API BasicModelVisualizer {
     bool shouldTerminate;
 
     enum class MenuID { SIMULATION }; //// TODO: Add more Menus
-    enum class SimMenuItem { QUIT };  //// TODO: Add more functionalities
+    enum class SimMenuItem { QUIT, TFS };  //// TODO: Add more functionalities
 		tf2_ros::TransformBroadcaster tf_broadcaster;
 		ros::NodeHandle n;
 };

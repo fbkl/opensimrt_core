@@ -27,6 +27,7 @@
 #include <Simulation/Model/PhysicalOffsetFrame.h>
 #include <Simulation/SimbodyEngine/Body.h>
 #include <simbody/internal/common.h>
+#include "geometry_msgs/TransformStamped.h"
 #include <sstream>
 
 
@@ -133,6 +134,7 @@ BasicModelVisualizer::BasicModelVisualizer(const OpenSim::Model& otherModel)
 #ifndef CONTINUOUS_INTEGRATION
 		model.setUseVisualizer(true);
 #endif
+		ros::NodeHandle n("~");
 
 		state = model.initSystem();
 
@@ -148,6 +150,7 @@ BasicModelVisualizer::BasicModelVisualizer(const OpenSim::Model& otherModel)
 		// add menu to visualizer //// TODO: add more if required
 		Array_<std::pair<String, int> > runMenuItems;
 		runMenuItems.push_back(std::make_pair("Quit", int(SimMenuItem::QUIT)));
+		runMenuItems.push_back(std::make_pair("Publish TFs", int(SimMenuItem::TFS)));
 		visualizer->addMenu("Simulation", int(MenuID::SIMULATION), runMenuItems);
 
 		// add fps decorator
@@ -155,6 +158,9 @@ BasicModelVisualizer::BasicModelVisualizer(const OpenSim::Model& otherModel)
 		visualizer->addDecorationGenerator(fps.get());
 		//fps->actual_delay =
 #endif
+		bodies = &model.getBodySet();
+		//myEngine = &model.getSimbodyEngine();	
+		sameHeader.frame_id = "opensim_frame";
 	}
 
 
@@ -205,22 +211,58 @@ void BasicModelVisualizer::update(const Vector& q,
 		shouldTerminate = true;
 	}
 
+	if (menuId == int(MenuID::SIMULATION) && item == int(SimMenuItem::TFS)) {
+		publish_transforms = !publish_transforms;
+	}
+
 	if (shouldTerminate) {
 		visualizer->shutdown();
 		THROW_EXCEPTION("Shutdown visualizer message received.");
 	}
 #endif
-	const OpenSim::BodySet& bodies = model.getBodySet();
-	for (int i = 0; i < bodies.getSize(); ++i)
+	if (publish_transforms)
+	//if (true)
 	{
-		const OpenSim::Body& body = bodies.get(i);
-	        const Transform X_GB = model.getSimbodyEngine().getTransform(state, body);
-		//std::cout << body.getName() << ": " << X_GB << std::endl;
-		Vec3 translation = X_GB.p();
-		Quaternion rotation = X_GB.R().convertRotationToQuaternion();
-		std::cout << body.getName() << "translation: " << translation << "rotation:" << rotation << std::endl;
-	}
+		geometry_msgs::TransformStamped some_tf;
+		sameHeader.stamp = ros::Time::now();
+		some_tf.header = sameHeader;
+		// i gotta stamp it to have the correct time
+		
+		for (int i = 0; i < bodies->getSize(); ++i)
+		{
+			const OpenSim::Body& body = bodies->get(i);
+			const std::string& bodyname = body.getName();
 
+			some_tf.child_frame_id = bodyname;
+			// TODO: the correct way here is with model find component <PhisicalFrame> and a pointer using body.getName() , i think,,, the way i did is deprecated, but we are lazy.
+			const OpenSim::PhysicalFrame* frame = model.findComponent<OpenSim::PhysicalFrame>
+("/bodyset/"+bodyname);
+			if (!frame)
+			{
+				std::cerr << "couldnt find frame i was looking for " << bodyname << std::endl;
+			continue;
+			}
+
+			const Transform X_GB = frame->getTransformInGround(state);
+			//std::cout << body.getName() << ": " << X_GB << std::endl;
+			Vec3 translation = X_GB.p();
+			Quaternion rotation = X_GB.R().convertRotationToQuaternion();
+			//std::cout << body.getName() << "translation: " << translation << "rotation:" << rotation << std::endl;
+			geometry_msgs::Transform tff;
+			tff.translation.x = translation[0];
+			tff.translation.y = translation[1];
+			tff.translation.z = translation[2];
+
+			// assuming the order of quaternion from opensim to be w, x, y, z
+			tff.rotation.w = rotation[0];
+			tff.rotation.x = rotation[1];
+			tff.rotation.y = rotation[2];
+			tff.rotation.z = rotation[3];
+			
+			some_tf.transform = tff;
+			tf_broadcaster.sendTransform(some_tf);
+		 }
+	}
 }
 
 void BasicModelVisualizer::updateReactionForceDecorator(
