@@ -42,7 +42,7 @@ FPSDecorator::FPSDecorator() : text("") {}
 
 void FPSDecorator::generateDecorations(const SimTK::State& state,
 		SimTK::Array_<SimTK::DecorativeGeometry>& geometry) {
-	DecorativeText info;
+	SimTK::DecorativeText info;
 	info.setIsScreenText(true);
 	info.setText(text);
 	geometry.push_back(info);
@@ -88,14 +88,14 @@ void ForceDecorator::generateDecorations(const SimTK::State& state,
 		SimTK::Array_<SimTK::DecorativeGeometry>& geometry) {
 	if(mbdIndex.isValid())
 		geometry.push_back(
-			DecorativeLine(point, point + scaleFactor *force)
+			SimTK::DecorativeLine(point, point + scaleFactor *force)
 			.setBodyId(mbdIndex)
 			.setColor(color)
 			.setLineThickness(lineThikness));
 	else
 	{cerr << "SimTK::MobilizedBodyIndex isnt valid" <<endl;
 		geometry.push_back(
-			DecorativeLine(point, point + scaleFactor *force)
+			SimTK::DecorativeLine(point, point + scaleFactor *force)
 			.setColor(color)
 			.setLineThickness(lineThikness));
 	}
@@ -275,7 +275,7 @@ void BasicModelVisualizer::updateReactionForceDecorator(
 }
 
 void BasicModelVisualizer::addDecorationGenerator(
-		DecorationGenerator* generator) {
+		SimTK::DecorationGenerator* generator) {
 #ifndef CONTINUOUS_INTEGRATION
 	visualizer->addDecorationGenerator(generator);
 #endif
