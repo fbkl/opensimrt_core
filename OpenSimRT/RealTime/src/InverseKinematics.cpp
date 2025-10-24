@@ -45,13 +45,13 @@ InverseKinematics::InverseKinematics(const OpenSim::Model& otherModel,
         : model(*otherModel.clone()), assembled(false) {
     // initialize model and assembler
     state = model.initSystem();
-    assembler = new Assembler(model.getMultibodySystem());
+    assembler = new SimTK::Assembler(model.getMultibodySystem());
     assembler->setAccuracy(accuracy);
     // assembler->setErrorTolerance(1e-3);
     assembler->setSystemConstraintsWeight(constraintsWeight);
 
     // populate assembly conditions for markers
-    markerAssemblyConditions = new Markers();
+    markerAssemblyConditions = new SimTK::Markers();
     SimTK::Array_<string> markerObservationOrder;
     for (const auto& task : markerTasks) {
         int markerIndex = model.getMarkerSet().getIndex(task.marker);
@@ -72,7 +72,7 @@ InverseKinematics::InverseKinematics(const OpenSim::Model& otherModel,
     }
 
     // populate assembly conditions for markers
-    imuAssemblyConditions = new OrientationSensors();
+    imuAssemblyConditions = new SimTK::OrientationSensors();
     SimTK::Array_<string> imuObservationOrder;
     for (const auto& task : imuTasks) {
         int bodyIndex = model.getBodySet().getIndex(task.body);

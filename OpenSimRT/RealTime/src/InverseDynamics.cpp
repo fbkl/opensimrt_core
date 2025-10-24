@@ -59,7 +59,7 @@ void ExternalWrench::Input::fromVector(const SimTK::Vector& in) {
 int ExternalWrench::Input::size() { return 9; }
 
 ExternalWrench::ExternalWrench(const ExternalWrench::Parameters& parameters)
-        : SimTK::Force(), parameters(parameters) {}
+        : OpenSim::Force(), parameters(parameters) {}
 
 ExternalWrench::Input& ExternalWrench::getInput() { return input; }
 

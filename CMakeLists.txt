@@ -53,7 +53,7 @@ option(USE_UNITY_BUILD "Enable to speed up the building" OFF)
 option(BUILD_IMU "Build IMU streamer interface" ON)
 
 # build code generation (example model moment arm)
-option(BUILD_MOMENT_ARM "Build code generated moment arm projects" ON)
+option(BUILD_MOMENT_ARM "Build code generated moment arm projects" OFF)
 
 # compilation database (completion for Linux)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
