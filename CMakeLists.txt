@@ -18,8 +18,7 @@ catkin_package(INCLUDE_DIRS
 	OpenSimRT
 	OpenSimRT/Common/include
 	OpenSimRT/RealTime/include
-	OpenSimRT/Vicon/include
-	LIBRARIES Common Vicon RealTime Ros
+	LIBRARIES Common RealTime Ros
 	DEPENDS OpenSim
 	CATKIN_DEPENDS opensimrt_msgs roscpp
 	)
@@ -48,7 +47,7 @@ option(BUILD_DOCUMENTATION
 option(USE_UNITY_BUILD "Enable to speed up the building" OFF)
 
 # build Vicon interface
-option(BUILD_VICON "Build Vicon streamer interface" OFF)
+#option(BUILD_VICON "Build Vicon streamer interface" OFF)
 
 # build IMU interface
 option(BUILD_IMU "Build IMU streamer interface" ON)
