@@ -31,6 +31,7 @@ set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 include(cmake/CMakeHelpers.cmake)
 
 # enable testing
+set(BUILD_TESTING OFF) 
 include(CTest)
 enable_testing()
 
