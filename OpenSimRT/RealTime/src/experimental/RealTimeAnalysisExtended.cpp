@@ -24,8 +24,6 @@
 using namespace std;
 using namespace OpenSim;
 using namespace OpenSimRT;
-using namespace SimTK;
-
 RealTimeAnalysisExtended::RealTimeAnalysisExtended(const Model& otherModel,
                                                    const Parameters& parameters)
         : RealTimeAnalysis(otherModel,
@@ -129,8 +127,8 @@ void RealTimeAnalysisExtended::acquisition() {
 
 void RealTimeAnalysisExtended::processing() {
     try {
-        Vector am, fm, residuals, reactionWrenchVector;
-        Vector_<SpatialVec> reactionWrenches;
+        SimTK::Vector am, fm, residuals, reactionWrenchVector;
+        SimTK::Vector_<SimTK::SpatialVec> reactionWrenches;
         while (true) {
             if (shouldTerminate()) THROW_EXCEPTION("Processing terminated.");
 

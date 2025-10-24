@@ -26,14 +26,13 @@
 #define MM_TO_M(x) 0.01 * x
 
 using namespace std;
-using namespace SimTK;
 using namespace OpenSimRT;
 
 using namespace ViconDataStreamSDK::CPP;
 
 /*******************************************************************************/
 
-ViconDataStream::ViconDataStream(vector<Vec3> labForcePlatePositions)
+ViconDataStream::ViconDataStream(vector<SimTK::Vec3> labForcePlatePositions)
         : labForcePlatePositions(labForcePlatePositions) {
     previousMarkerDataTime = -1.0;
     previousForceDataTime = -1.0;
@@ -144,12 +143,12 @@ void ViconDataStream::getFrame() {
                                                           markerName);
                 if (!markerGlobalTranslation.Occluded) {
                     // convert to meters
-                    markerData.markers[markerName] = Vec3(
+                    markerData.markers[markerName] = SimTK::Vec3(
                             MM_TO_M(markerGlobalTranslation.Translation[0]),
                             MM_TO_M(markerGlobalTranslation.Translation[1]),
                             MM_TO_M(markerGlobalTranslation.Translation[2]));
                 } else {
-                    markerData.markers[markerName] = Vec3(NaN);
+                    markerData.markers[markerName] = SimTK::Vec3(SimTK::NaN);
                 }
             }
         }
@@ -168,17 +167,17 @@ void ViconDataStream::getFrame() {
             ForceData forceData;
             forceData.time = currentForceDataTime;
             for (int i = 0; i < forcePlates; ++i) {
-                Vec3 currentFpPos = labForcePlatePositions[i];
+                SimTK::Vec3 currentFpPos = labForcePlatePositions[i];
                 Output_GetGlobalForceVector forceVector =
                         client.GetGlobalForceVector(i);
-                Vec3 grfVec;
+                SimTK::Vec3 grfVec;
                 grfVec[0] = forceVector.ForceVector[0];
                 grfVec[1] = forceVector.ForceVector[1];
                 grfVec[2] = forceVector.ForceVector[2];
 
                 Output_GetGlobalCentreOfPressure centreOfPressure =
                         client.GetGlobalCentreOfPressure(i);
-                Vec3 grfPoint;
+                SimTK::Vec3 grfPoint;
                 grfPoint[0] = centreOfPressure.CentreOfPressure[0];
                 grfPoint[1] = centreOfPressure.CentreOfPressure[1];
                 grfPoint[2] = centreOfPressure.CentreOfPressure[2];
@@ -186,7 +185,7 @@ void ViconDataStream::getFrame() {
                 // calculate the values of the moment of the 'position'
                 // reference system of the force plate in the global coordinate
                 // system
-                Vec3 momentOnPosition(0.);
+                SimTK::Vec3 momentOnPosition(0.);
                 momentOnPosition[0] = currentFpPos[1] * grfVec[2] -
                                       currentFpPos[2] * grfVec[1];
                 momentOnPosition[1] = currentFpPos[2] * grfVec[0] -
@@ -200,12 +199,12 @@ void ViconDataStream::getFrame() {
                 // calculate the correct values of the moments relatively the
                 // global coordinate system by adding the missing position
                 // moment
-                Vec3 moments(0.0);
+                SimTK::Vec3 moments(0.0);
                 moments[0] = momentVector.MomentVector[0] + momentOnPosition[0];
                 moments[1] = momentVector.MomentVector[1] + momentOnPosition[1];
                 moments[2] = momentVector.MomentVector[2] + momentOnPosition[2];
 
-                Vec3 grfTorque;
+                SimTK::Vec3 grfTorque;
                 grfTorque[0] = 0;
                 grfTorque[1] = (moments[1] - grfVec[0] * grfPoint[2] +
                                 grfVec[2] * grfPoint[0]);

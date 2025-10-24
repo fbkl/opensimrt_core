@@ -34,7 +34,6 @@ using std::cout;
 using std::endl;
 using std::string;
 using std::vector;
-using namespace SimTK;
 using namespace OpenSimRT;
 
 /******************************************************************************/
@@ -53,7 +52,7 @@ InverseKinematics::InverseKinematics(const OpenSim::Model& otherModel,
 
     // populate assembly conditions for markers
     markerAssemblyConditions = new Markers();
-    Array_<string> markerObservationOrder;
+    SimTK::Array_<string> markerObservationOrder;
     for (const auto& task : markerTasks) {
         int markerIndex = model.getMarkerSet().getIndex(task.marker);
         if (markerIndex < 0) {
@@ -74,7 +73,7 @@ InverseKinematics::InverseKinematics(const OpenSim::Model& otherModel,
 
     // populate assembly conditions for markers
     imuAssemblyConditions = new OrientationSensors();
-    Array_<string> imuObservationOrder;
+    SimTK::Array_<string> imuObservationOrder;
     for (const auto& task : imuTasks) {
         int bodyIndex = model.getBodySet().getIndex(task.body);
         if (bodyIndex < 0) {
@@ -183,7 +182,7 @@ void InverseKinematics::createIMUTasksFromMarkerData(
     for (int i = 0; i < markerData.getNumMarkers(); ++i) {
         auto body = markerData.getMarkerNames()[i];
         if (model.getBodySet().getIndex(body) >= 0) {
-            imuTasks.push_back({body, body, Rotation(), 1.0});
+            imuTasks.push_back({body, body, SimTK::Rotation(), 1.0});
             observationOrder.push_back(body);
         } else {
             cout << "imu: " + body
@@ -237,8 +236,8 @@ InverseKinematics::Input InverseKinematics::getFrameFromMarkerData(
         if (!isIMU) {
             input.markerObservations.push_back(vec);
         } else {
-            input.imuObservations.push_back(Rotation(
-                    BodyOrSpaceType::SpaceRotationSequence, vec[0],
+            input.imuObservations.push_back(SimTK::Rotation(
+                    SimTK::BodyOrSpaceType::SpaceRotationSequence, vec[0],
                     SimTK::XAxis, vec[1], SimTK::YAxis, vec[2], SimTK::ZAxis));
         }
     }

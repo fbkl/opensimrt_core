@@ -26,8 +26,6 @@
 using namespace std;
 using namespace OpenSim;
 using namespace OpenSimRT;
-using namespace SimTK;
-
 void RealTimeAnalysis::FilteredData::fromVector(const double& time,
                                                 const SimTK::Vector& x,
                                                 const SimTK::Vector& xd,
@@ -86,13 +84,13 @@ void RealTimeAnalysis::run() {
     processingThread.detach();
 }
 
-Vector RealTimeAnalysis::prepareUnfilteredData(
-        const Vector& q,
+SimTK::Vector RealTimeAnalysis::prepareUnfilteredData(
+        const SimTK::Vector& q,
         const vector<ExternalWrench::Input>& externalWrenches) const {
     int m = q.size() + externalWrenches.size() * ExternalWrench::Input::size();
     if (m == 0) { THROW_EXCEPTION("cannot convert from empty"); }
 
-    Vector v(m);
+    SimTK::Vector v(m);
     v(0, q.size()) = q;
     for (int i = 0; i < externalWrenches.size(); ++i) {
         auto w = externalWrenches[i].toVector();
@@ -141,8 +139,8 @@ void RealTimeAnalysis::acquisition() {
 void RealTimeAnalysis::processing() {
     try {
         FilteredData filteredData;
-        Vector am, fm, residuals, reactionWrenchVector;
-        Vector_<SpatialVec> reactionWrenches;
+        SimTK::Vector am, fm, residuals, reactionWrenchVector;
+        SimTK::Vector_<SimTK::SpatialVec> reactionWrenches;
         while (true) {
             if (shouldTerminate()) THROW_EXCEPTION("Processing terminated.");
 

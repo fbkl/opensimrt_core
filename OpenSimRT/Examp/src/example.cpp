@@ -5,8 +5,6 @@
 #include <Simulation/Model/Frame.h>
 #include <Simulation/SimbodyEngine/Body.h>
 using OpenSim::PhysicalOffsetFrame;
-
-using namespace SimTK;
 using namespace OpenSim;
 
 class CustomController: public OpenSim::PrescribedController
@@ -25,9 +23,9 @@ class CustomController: public OpenSim::PrescribedController
 					SimTK::Transform a  = from_frame->findTransformBetween(s, *to_frame);
 					std::cout << a.toMat44() << std::endl;
 					auto rotationTranslation = a;
-					std::cout << "Rotation Matrix:" << std::endl;
+					std::cout << "SimTK::Rotation SimTK::Matrix:" << std::endl;
 					std::cout << rotationTranslation.R() << std::endl;
-					std::cout << "Translation Vector:" << std::endl;
+					std::cout << "Translation SimTK::Vector:" << std::endl;
 					std::cout << rotationTranslation.p() << std::endl;
 				}
 				else
@@ -56,23 +54,23 @@ int main() {
 
 	// Create two links, each with a mass of 1 kg, center of mass at the body's
 	// origin, and moments and products of inertia of zero.
-	OpenSim::Body* humerus = new OpenSim::Body("humerus", 1, Vec3(0), Inertia(0));
-	OpenSim::Body* radius  = new OpenSim::Body("radius",  1, Vec3(0), Inertia(0));
+	OpenSim::Body* humerus = new OpenSim::Body("humerus", 1, SimTK::Vec3(0), SimTK::Inertia(0));
+	OpenSim::Body* radius  = new OpenSim::Body("radius",  1, SimTK::Vec3(0), SimTK::Inertia(0));
 
 	// Connect the bodies with pin joints. Assume each body is 1 m long.
 	PinJoint* shoulder = new PinJoint("shoulder",
 			// Parent body, location in parent, orientation in parent.
-			model.getGround(), Vec3(0), Vec3(0),
+			model.getGround(), SimTK::Vec3(0), SimTK::Vec3(0),
 			// Child body, location in child, orientation in child.
-			*humerus, Vec3(0, 1, 0), Vec3(0));
+			*humerus, SimTK::Vec3(0, 1, 0), SimTK::Vec3(0));
 	PinJoint* elbow = new PinJoint("elbow",
-			*humerus, Vec3(0), Vec3(0), *radius, Vec3(0, 1, 0), Vec3(0));
+			*humerus, SimTK::Vec3(0), SimTK::Vec3(0), *radius, SimTK::Vec3(0, 1, 0), SimTK::Vec3(0));
 
 	// Add a muscle that flexes the elbow.
 	Millard2012EquilibriumMuscle* biceps = new
 		Millard2012EquilibriumMuscle("biceps", 200, 0.6, 0.55, 0);
-	biceps->addNewPathPoint("origin",    *humerus, Vec3(0, 0.8, 0));
-	biceps->addNewPathPoint("insertion", *radius,  Vec3(0, 0.7, 0));
+	biceps->addNewPathPoint("origin",    *humerus, SimTK::Vec3(0, 0.8, 0));
+	biceps->addNewPathPoint("insertion", *radius,  SimTK::Vec3(0, 0.7, 0));
 
 	// Add a controller that specifies the excitation of the muscle.
 	PrescribedController* brain = new PrescribedController();
@@ -105,20 +103,20 @@ int main() {
 	bodyGeometry.setColor(Gray);
 	// Attach an ellipsoid to a frame located at the center of each body.
 	PhysicalOffsetFrame* humerusCenter = new PhysicalOffsetFrame(
-			"humerusCenter", *humerus, Transform(Vec3(0, 0.5, 0)));
+			"humerusCenter", *humerus, SimTK::Transform(SimTK::Vec3(0, 0.5, 0)));
 	humerus->addComponent(humerusCenter);
 	humerusCenter->attachGeometry(bodyGeometry.clone());
 	PhysicalOffsetFrame* radiusCenter = new PhysicalOffsetFrame(
-			"radiusCenter", *radius, Transform(Vec3(0, 0.5, 0)));
+			"radiusCenter", *radius, SimTK::Transform(SimTK::Vec3(0, 0.5, 0)));
 	radius->addComponent(radiusCenter);
 	radiusCenter->attachGeometry(bodyGeometry.clone());
 	cc = new CustomController(model);
 
 	// Configure the model.
-	State& state = model.initSystem();
+	SimTK::State& state = model.initSystem();
 	// Fix the shoulder at its default angle and begin with the elbow flexed.
 	shoulder->getCoordinate().setLocked(state, true);
-	elbow->getCoordinate().setValue(state, 0.5 * Pi);
+	elbow->getCoordinate().setValue(state, 0.5 * SimTK::Pi);
 	model.equilibrateMuscles(state);
 
 	// Configure the visualizer.

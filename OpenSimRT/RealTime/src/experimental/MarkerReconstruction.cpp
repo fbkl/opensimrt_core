@@ -23,8 +23,6 @@
 using namespace std;
 using namespace OpenSim;
 using namespace OpenSimRT;
-using namespace SimTK;
-
 // MarkerReconstruction constructor
 MarkerReconstruction::MarkerReconstruction(
         const Model& otherModel,
@@ -53,22 +51,22 @@ MarkerReconstruction::MarkerReconstruction(
             const auto& jMarkerName = itr->second;
             const auto& jMarker = model.getMarkerSet().get(jMarkerName);
 
-            Vec3 dij = jMarker.get_location() - iMarker.get_location();
+            SimTK::Vec3 dij = jMarker.get_location() - iMarker.get_location();
             markerDistanceTable[iMarkerName][jMarkerName] = dij;
         }
     }
 }
 
 bool MarkerReconstruction::isValidFrame(
-        const Array_<Vec3>& markerObservations) {
+        const SimTK::Array_<SimTK::Vec3>& markerObservations) {
     // check for missing markers
     for (const auto& m : markerObservations) {
-        if (m == Vec3(0) || !m.isFinite()) { return false; }
+        if (m == SimTK::Vec3(0) || !m.isFinite()) { return false; }
     }
     return true;
 }
 
-bool MarkerReconstruction::initState(const Array_<Vec3>& markerObservations) {
+bool MarkerReconstruction::initState(const SimTK::Array_<SimTK::Vec3>& markerObservations) {
     if (!isInitialized) {
         if (isValidFrame(markerObservations)) {
             // assign the valid frame to the initial state of the previous known
@@ -82,18 +80,18 @@ bool MarkerReconstruction::initState(const Array_<Vec3>& markerObservations) {
 }
 
 void MarkerReconstruction::reconstructionMethod(
-        Array_<Vec3>& currentObservations, const int& i) {
+        SimTK::Array_<SimTK::Vec3>& currentObservations, const int& i) {
     currentObservations[i] = previousObservations[i];
 }
 
 void MarkerReconstruction::reconstructionMethod(
-        Array_<Vec3>& currentObservations, const int& i, const int& id1) {
+        SimTK::Array_<SimTK::Vec3>& currentObservations, const int& i, const int& id1) {
     auto d1x = previousObservations[id1] - previousObservations[i];
     currentObservations[i] = currentObservations[id1] - d1x;
 }
 
 void MarkerReconstruction::reconstructionMethod(
-        Array_<Vec3>& currentObservations, const int& i, const int& id1,
+        SimTK::Array_<SimTK::Vec3>& currentObservations, const int& i, const int& id1,
         const int& id2) {
     // distance vectors between the missing and closest markers
     auto d1x = previousObservations[id1] - previousObservations[i];
@@ -124,17 +122,17 @@ void MarkerReconstruction::reconstructionMethod(
 }
 
 void MarkerReconstruction::reconstructionMethod(
-        Array_<Vec3>& currentObservations, const int& i,
+        SimTK::Array_<SimTK::Vec3>& currentObservations, const int& i,
         const vector<int>& indices) {
-    Matrix A(3, 3);
-    Matrix B(3, 3);
+    SimTK::Matrix A(3, 3);
+    SimTK::Matrix B(3, 3);
 
     // marker coordinates as columns in matrices
     for (int j = 0; j < 3; ++j) {
-        A.updCol(j) = Vector(3, &previousObservations[indices[j]][0]);
+        A.updCol(j) = SimTK::Vector(3, &previousObservations[indices[j]][0]);
     }
     for (int j = 0; j < 3; ++j) {
-        B.updCol(j) = Vector(3, &currentObservations[indices[j]][0]);
+        B.updCol(j) = SimTK::Vector(3, &currentObservations[indices[j]][0]);
     }
 
     // find centroid and substract from columns in A and B
@@ -145,35 +143,35 @@ void MarkerReconstruction::reconstructionMethod(
     for (int j = 0; j < B.ncol(); ++j) { B.updCol(j) -= centroid_B; }
 
     // solve SVD for H = A * B**T --> [U, S, V**T] = SVD(H)
-    Matrix rightVectors;
-    Matrix leftVectors;
-    Vector singularValues;
+    SimTK::Matrix rightVectors;
+    SimTK::Matrix leftVectors;
+    SimTK::Vector singularValues;
 
     FactorSVD svd(A * (~B));
     svd.getSingularValuesAndVectors(singularValues, leftVectors, rightVectors);
 
     // rotation matrix R = V * U**T
     auto r = (~rightVectors) * (~leftVectors);
-    auto R = Mat33(r[0][0], r[0][1], r[0][2], r[1][0], r[1][1], r[1][2],
+    auto R = SimTK::Mat33(r[0][0], r[0][1], r[0][2], r[1][0], r[1][1], r[1][2],
                    r[2][0], r[2][1], r[2][2]);
 
     // address reflexion case
     if (det(R) < 0) {
         rightVectors[2] *= -1;
         r = (~rightVectors) * (~leftVectors);
-        R = Mat33(r[0][0], r[0][1], r[0][2], r[1][0], r[1][1], r[1][2], r[2][0],
+        R = SimTK::Mat33(r[0][0], r[0][1], r[0][2], r[1][0], r[1][1], r[1][2], r[2][0],
                   r[2][1], r[2][2]);
     }
 
     // translation vector
-    auto t = centroid_B - Matrix(R) * centroid_A;
+    auto t = centroid_B - SimTK::Matrix(R) * centroid_A;
 
     // transform missing marker to compute a current estimate
-    auto estimate = Matrix(R) * Vector(previousObservations[i]) + t;
-    currentObservations[i] = Vec3(estimate[0], estimate[1], estimate[2]);
+    auto estimate = SimTK::Matrix(R) * SimTK::Vector(previousObservations[i]) + t;
+    currentObservations[i] = SimTK::Vec3(estimate[0], estimate[1], estimate[2]);
 }
 
-void MarkerReconstruction::solve(Array_<Vec3>& currentObservations) {
+void MarkerReconstruction::solve(SimTK::Array_<SimTK::Vec3>& currentObservations) {
     for (int i = 0; i < currentObservations.size(); ++i) {
         if (!currentObservations[i].isFinite()) {
             // find the closest markers (max = 3) of the missing marker.
@@ -202,8 +200,8 @@ void MarkerReconstruction::solve(Array_<Vec3>& currentObservations) {
     previousObservations = currentObservations;
 }
 
-Array_<Vec3>
-MarkerReconstruction::solve(const Array_<Vec3>& currentObservations) {
+SimTK::Array_<SimTK::Vec3>
+MarkerReconstruction::solve(const SimTK::Array_<SimTK::Vec3>& currentObservations) {
     auto reconstructedObservations(currentObservations);
     solve(reconstructedObservations);
     return reconstructedObservations;
@@ -213,7 +211,7 @@ MarkerReconstruction::Circle*
 MarkerReconstruction::sphereSphereIntersection(const Sphere& c1,
                                                const Sphere& c2) {
     double d = (c1.origin - c2.origin).norm();        // distance of two origins
-    Vec3 d_hat = (c2.origin - c1.origin).normalize(); // unit vector
+    SimTK::Vec3 d_hat = (c2.origin - c1.origin).normalize(); // unit vector
 
     // check for solvability.
     if (d > (c1.radius + c2.radius) || (d < abs(c1.radius - c2.radius))) {
@@ -232,7 +230,7 @@ MarkerReconstruction::sphereSphereIntersection(const Sphere& c1,
     return new Circle{h, p, d_hat};
 }
 
-Vec3 MarkerReconstruction::closestPointToCircle(const Vec3& vec,
+SimTK::Vec3 MarkerReconstruction::closestPointToCircle(const SimTK::Vec3& vec,
                                                 const Circle* c) {
     auto dist = dot(vec - c->origin, c->normal);
     auto vec_prime = vec - dist * c->normal;
@@ -243,7 +241,7 @@ Vec3 MarkerReconstruction::closestPointToCircle(const Vec3& vec,
 };
 
 vector<int> MarkerReconstruction::findClosestMarkers(
-        const string& mMarkerName, const Array_<Vec3>& currentObservations,
+        const string& mMarkerName, const SimTK::Array_<SimTK::Vec3>& currentObservations,
         int numMarkers) {
     // info of missing marker
     const auto& mMarker = model.getMarkerSet().get(mMarkerName);
@@ -287,8 +285,8 @@ vector<int> MarkerReconstruction::findClosestMarkers(
     return output;
 }
 
-TimeSeriesTable_<Vec3> MarkerReconstruction::initializeLogger() {
-    TimeSeriesTable_<Vec3> table;
+TimeSeriesTable_<SimTK::Vec3> MarkerReconstruction::initializeLogger() {
+    TimeSeriesTable_<SimTK::Vec3> table;
     table.setColumnLabels(observationOrder);
     return table;
 }

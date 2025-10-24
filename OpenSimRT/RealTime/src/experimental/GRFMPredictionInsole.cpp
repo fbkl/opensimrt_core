@@ -26,8 +26,6 @@
 using namespace std;
 using namespace OpenSim;
 using namespace OpenSimRT;
-using namespace SimTK;
-
 GRFMPredictionInsole::GRFMPredictionInsole(const Model& otherModel,
                                const Parameters& aParameters,
                                GaitPhaseDetector* detector)
@@ -80,11 +78,11 @@ GRFMPredictionInsole::GRFMPredictionInsole(const Model& otherModel,
 
     // define CoP trajectory (linear transition from heel -> metatarsal)
     // Source: https://doi.org/10.1016/j.jbiomech.2013.09.012
-    copPosition = [&](const double& t, const Vec3& d) -> Vec3 {
-        const auto omega = 2.0 * Pi / Tss;
+    copPosition = [&](const double& t, const SimTK::Vec3& d) -> SimTK::Vec3 {
+        const auto omega = 2.0 * SimTK::Pi / Tss;
         // clip the scale factor if exceeds the range [0,1].
         const auto scale =
-                clip(-2.0 / (3 * Pi) *
+                clip(-2.0 / (3 * SimTK::Pi) *
                              (sin(omega * t) - sin(2 * omega * t) / 8 -
                               3.0 / 4.0 * omega * t),
                      0.0, 1.0);
@@ -107,30 +105,30 @@ GRFMPredictionInsole::computeGaitDirectionRotation(const std::string& bodyName) 
     gaitDirectionBuffer.insert((~R_GB).col(0).asVec3());
 
     // compute the average heading direction
-    auto gaitDirection = projectionOnPlane(gaitDirectionBuffer.mean(), Vec3(0),
-                                           Vec3(0, 1, 0));
+    auto gaitDirection = projectionOnPlane(gaitDirectionBuffer.mean(), SimTK::Vec3(0),
+                                           SimTK::Vec3(0, 1, 0));
 
     // rotation about the vertical axis to transform the reaction components
     // from the opensim global reference frame to the gait-direction
     // reference frame
     auto crossProd =
-            SimTK::cross(gaitDirection, Vec3(1, 0, 0));      // |a|.|b|.sin(q).n
-    auto dotProd = SimTK::dot(gaitDirection, Vec3(1, 0, 0)); // |a|.|b|.cos(q)
+            SimTK::cross(gaitDirection, SimTK::Vec3(1, 0, 0));      // |a|.|b|.sin(q).n
+    auto dotProd = SimTK::dot(gaitDirection, SimTK::Vec3(1, 0, 0)); // |a|.|b|.cos(q)
     auto q = std::atan(crossProd.norm() / dotProd);
 
-    return SimTK::Rotation(q, Vec3(0, 1, 0));
+    return SimTK::Rotation(q, SimTK::Vec3(0, 1, 0));
 }
 
 GRFMPredictionInsole::Output
 GRFMPredictionInsole::solve(const GRFMPredictionInsole::Input& input) {
     Output output;
     output.t = input.t;
-    output.right.force = Vec3(0.0);
-    output.right.torque = Vec3(0.0);
-    output.right.point = Vec3(0.0);
-    output.left.force = Vec3(0.0);
-    output.left.torque = Vec3(0.0);
-    output.left.point = Vec3(0.0);
+    output.right.force = SimTK::Vec3(0.0);
+    output.right.torque = SimTK::Vec3(0.0);
+    output.right.point = SimTK::Vec3(0.0);
+    output.left.force = SimTK::Vec3(0.0);
+    output.left.torque = SimTK::Vec3(0.0);
+    output.left.point = SimTK::Vec3(0.0);
 
     if (gaitPhaseDetector->isDetectorReady()) {
         // update model state and realize state
@@ -141,7 +139,7 @@ GRFMPredictionInsole::solve(const GRFMPredictionInsole::Input& input) {
         auto R = computeGaitDirectionRotation(parameters.pelvisBodyName);
 
         // compute total reaction force/moment
-        Vec3 totalReactionForce(0), totalReactionMoment(0);
+        SimTK::Vec3 totalReactionForce(0), totalReactionMoment(0);
         computeTotalReactionComponents(input, totalReactionForce,
                                        totalReactionMoment);
 
@@ -162,7 +160,7 @@ GRFMPredictionInsole::solve(const GRFMPredictionInsole::Input& input) {
         Tds = gaitPhaseDetector->getDoubleSupportDuration();
 
         // forces
-        Vec3 rightReactionForce, leftReactionForce;
+        SimTK::Vec3 rightReactionForce, leftReactionForce;
         separateReactionComponents(time, totalReactionForce, totalForceAtThs,
                                    reactionComponentTransition,
                                    reactionComponentTransition,
@@ -170,7 +168,7 @@ GRFMPredictionInsole::solve(const GRFMPredictionInsole::Input& input) {
                                    rightReactionForce, leftReactionForce);
 
         // moments
-        Vec3 rightReactionMoment, leftReactionMoment;
+        SimTK::Vec3 rightReactionMoment, leftReactionMoment;
         separateReactionComponents(time, totalReactionMoment, totalMomentAtThs,
                                    reactionComponentTransition,
                                    reactionComponentTransition,
@@ -178,7 +176,7 @@ GRFMPredictionInsole::solve(const GRFMPredictionInsole::Input& input) {
                                    rightReactionMoment, leftReactionMoment);
 
         // cop
-        Vec3 rightPoint, leftPoint;
+        SimTK::Vec3 rightPoint, leftPoint;
         computeReactionPoint(input.t, rightPoint, leftPoint);
 
         // results
@@ -193,16 +191,16 @@ GRFMPredictionInsole::solve(const GRFMPredictionInsole::Input& input) {
 }
 
 void GRFMPredictionInsole::separateReactionComponents(
-        const double& time, const Vec3& totalReactionComponent,
+        const double& time, const SimTK::Vec3& totalReactionComponent,
         const SimTK::Vec3& totalReactionAtThs,
         const TransitionFuction& anteriorComponentFunction,
         const TransitionFuction& verticalComponentFunction,
         const TransitionFuction& lateralComponentFunction,
-        Vec3& rightReactionComponent, Vec3& leftReactionComponent) {
+        SimTK::Vec3& rightReactionComponent, SimTK::Vec3& leftReactionComponent) {
     switch (gaitPhaseDetector->getPhase()) {
     case GaitPhaseState::GaitPhase::DOUBLE_SUPPORT: {
         // compute the trailing and leading leg reaction components
-        Vec3 trailingReactionComponent, leadingReactionComponent;
+        SimTK::Vec3 trailingReactionComponent, leadingReactionComponent;
 
         // trailing leg component
         trailingReactionComponent[0] =
@@ -234,17 +232,17 @@ void GRFMPredictionInsole::separateReactionComponents(
 
     case GaitPhaseState::GaitPhase::LEFT_SWING: {
         rightReactionComponent = totalReactionComponent;
-        leftReactionComponent = Vec3(0);
+        leftReactionComponent = SimTK::Vec3(0);
     } break;
 
     case GaitPhaseState::GaitPhase::RIGHT_SWING: {
-        rightReactionComponent = Vec3(0);
+        rightReactionComponent = SimTK::Vec3(0);
         leftReactionComponent = totalReactionComponent;
     } break;
 
     default: {
-        rightReactionComponent = Vec3(0);
-        leftReactionComponent = Vec3(0);
+        rightReactionComponent = SimTK::Vec3(0);
+        leftReactionComponent = SimTK::Vec3(0);
     } break;
     }
 }
@@ -283,7 +281,7 @@ void GRFMPredictionInsole::computeReactionPoint(const double& t,
         auto time = t - gaitPhaseDetector->getToeOffTime();
 
         // result CoP
-        leftPoint = Vec3(0);
+        leftPoint = SimTK::Vec3(0);
         rightPoint =
                 heelStationR->getLocationInGround(state) + copPosition(time, d);
     } break;
@@ -297,14 +295,14 @@ void GRFMPredictionInsole::computeReactionPoint(const double& t,
         auto time = t - gaitPhaseDetector->getToeOffTime();
 
         // result CoP
-        rightPoint = Vec3(0);
+        rightPoint = SimTK::Vec3(0);
         leftPoint =
                 heelStationL->getLocationInGround(state) + copPosition(time, d);
     } break;
 
     default: {
-        rightPoint = Vec3(0.0);
-        leftPoint = Vec3(0.0);
+        rightPoint = SimTK::Vec3(0.0);
+        leftPoint = SimTK::Vec3(0.0);
     } break;
     }
 }

@@ -25,15 +25,14 @@
 
 using namespace std;
 using namespace OpenSim;
-using namespace SimTK;
 using namespace OpenSimRT;
 
-Matrix calculateMomentArm(const State& s, const Model& model,
+SimTK::Matrix calculateMomentArm(const SimTK::State& s, const Model& model,
                           const vector<int>& activeCoordinateIndices,
                           const vector<int>& activeMuscleIndices) {
     const auto& coordinates = model.getCoordinatesInMultibodyTreeOrder();
     const auto& muscles = model.getMuscles();
-    Matrix R(activeCoordinateIndices.size(), activeMuscleIndices.size());
+    SimTK::Matrix R(activeCoordinateIndices.size(), activeMuscleIndices.size());
     for (int i = 0; i < activeCoordinateIndices.size(); i++) {
         for (int j = 0; j < activeMuscleIndices.size(); j++) {
             const Coordinate& coord = *coordinates[i];
@@ -69,7 +68,7 @@ MuscleOptimization::MuscleOptimization(
     optimizer->setAdvancedRealOption("obj_scaling_factor", 1);
     optimizer->setAdvancedRealOption("nlp_scaling_max_gradient", 1);
     // optimizer->setAdvancedStrOption("hessian_approximation", "exact");
-    parameterSeeds = Vector(target->getNumParameters(), 0.5);
+    parameterSeeds = SimTK::Vector(target->getNumParameters(), 0.5);
 }
 
 MuscleOptimization::Output
@@ -111,19 +110,19 @@ TorqueBasedTarget::TorqueBasedTarget(
     // parameter bounds
     auto& as = model->getActuators();
     int na = as.getSize();
-    fMax = Vector(na, 0.0);
-    Vector lowerBounds(na, 0.0), upperBounds(na, 0.0);
+    fMax = SimTK::Vector(na, 0.0);
+    SimTK::Vector lowerBounds(na, 0.0), upperBounds(na, 0.0);
     for (int i = 0; i < na; ++i) {
         auto muscle = dynamic_cast<const Muscle*>(&as[i]);
         auto pathAct = dynamic_cast<const PathActuator*>(&as[i]);
         if (muscle) {
             fMax[i] = muscle->getMaxIsometricForce();
             lowerBounds[i] = 0.0;
-            upperBounds[i] = Infinity;
+            upperBounds[i] = SimTK::Infinity;
         } else if (pathAct) {
             fMax[i] = pathAct->getOptimalForce();
             lowerBounds[i] = 0.0;
-            upperBounds[i] = Infinity;
+            upperBounds[i] = SimTK::Infinity;
         } else {
             THROW_EXCEPTION("unsupported type of actuator");
         }
@@ -138,12 +137,12 @@ void TorqueBasedTarget::prepareForOptimization(
     R = calcMomentArm(input.q);
     R = R(6, 0, R.nrow() - 6, R.ncol());
 }
-Vector TorqueBasedTarget::extractMuscleForces(const Vector& x) const {
+SimTK::Vector TorqueBasedTarget::extractMuscleForces(const SimTK::Vector& x) const {
     return x;
 }
 
-int TorqueBasedTarget::objectiveFunc(const Vector& x, bool newCoefficients,
-                                     Real& rP) const {
+int TorqueBasedTarget::objectiveFunc(const SimTK::Vector& x, bool newCoefficients,
+                                     SimTK::Real& rP) const {
     rP = 0.0;
     for (int i = 0; i < getNumParameters(); ++i) {
         rP += 1 / p * pow(x[i] / fMax[i], p);
@@ -151,22 +150,22 @@ int TorqueBasedTarget::objectiveFunc(const Vector& x, bool newCoefficients,
     return 0;
 }
 
-int TorqueBasedTarget::gradientFunc(const Vector& x, bool newCoefficients,
-                                    Vector& gradient) const {
+int TorqueBasedTarget::gradientFunc(const SimTK::Vector& x, bool newCoefficients,
+                                    SimTK::Vector& gradient) const {
     for (int i = 0; i < getNumParameters(); ++i) {
         gradient[i] = pow(x[i] / fMax[i], p - 1);
     }
     return 0;
 }
 
-int TorqueBasedTarget::constraintFunc(const Vector& x, bool newCoefficients,
-                                      Vector& constraints) const {
+int TorqueBasedTarget::constraintFunc(const SimTK::Vector& x, bool newCoefficients,
+                                      SimTK::Vector& constraints) const {
     constraints = R * x - tau;
     return 0;
 }
 
-int TorqueBasedTarget::constraintJacobian(const Vector& x, bool newCoefficients,
-                                          Matrix& jac) const {
+int TorqueBasedTarget::constraintJacobian(const SimTK::Vector& x, bool newCoefficients,
+                                          SimTK::Matrix& jac) const {
     jac = R;
     return 0;
 }

@@ -29,27 +29,25 @@
 using namespace std;
 using namespace OpenSim;
 using namespace OpenSimRT;
-using namespace SimTK;
-
 ContactForceBasedPhaseDetector::ContactForceBasedPhaseDetector(
         const Model& otherModel, const Parameters& otherParameters)
         : GaitPhaseDetector(otherParameters.windowSize),
           model(*otherModel.clone()), parameters(otherParameters) {
     // add platform
-    auto platform = new OpenSim::Body("Platform", 1.0, Vec3(0), Inertia(0));
+    auto platform = new OpenSim::Body("Platform", 1.0, SimTK::Vec3(0), SimTK::Inertia(0));
     model.addBody(platform);
 
     // add weld joint
     auto platformToGround = new WeldJoint("PlatformToGround", model.getGround(),
-                                          Vec3(0), Vec3(0), *platform,
-                                          -parameters.plane_origin, Vec3(0));
+                                          SimTK::Vec3(0), SimTK::Vec3(0), *platform,
+                                          -parameters.plane_origin, SimTK::Vec3(0));
     model.addJoint(platformToGround);
 
     // add contact half-space
     auto platformContact = new ContactHalfSpace();
     platformContact->setName("PlatformContact");
-    platformContact->set_location(Vec3(0));
-    platformContact->set_orientation(Vec3(0.0, 0.0, -Pi / 2.0));
+    platformContact->set_location(SimTK::Vec3(0));
+    platformContact->set_orientation(SimTK::Vec3(0.0, 0.0, -SimTK::Pi / 2.0));
     platformContact->setFrame(*platform);
     model.addContactGeometry(platformContact);
 
@@ -120,12 +118,12 @@ void ContactForceBasedPhaseDetector::updDetector(
 
     // compute contact forces
     auto rightContactWrench = rightContactForce.get()->getRecordValues(state);
-    Vec3 rightContactForce(-rightContactWrench.get(0),
+    SimTK::Vec3 rightContactForce(-rightContactWrench.get(0),
                            -rightContactWrench.get(1),
                            -rightContactWrench.get(2));
 
     auto leftContactWrench = leftContactForce.get()->getRecordValues(state);
-    Vec3 leftContactForce(-leftContactWrench.get(0), -leftContactWrench.get(1),
+    SimTK::Vec3 leftContactForce(-leftContactWrench.get(0), -leftContactWrench.get(1),
                           -leftContactWrench.get(2));
 
     // update detector internal state

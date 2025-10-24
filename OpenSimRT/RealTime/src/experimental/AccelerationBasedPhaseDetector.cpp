@@ -24,16 +24,14 @@
 
 using namespace OpenSimRT;
 using namespace OpenSim;
-using namespace SimTK;
-
 AccelerationBasedPhaseDetector::AccelerationBasedPhaseDetector(
         const Model& otherModel, const Parameters& otherParameters)
         : GaitPhaseDetector(otherParameters.windowSize),
           model(*otherModel.clone()), parameters(otherParameters) {
     // initialize buffers with consecutive values indicating the acceleration
     // exceeds the threshold
-    rSlidingWindow.init(Array_<Vec2>(2, Vec2(0.0)));
-    lSlidingWindow.init(Array_<Vec2>(2, Vec2(0.0)));
+    rSlidingWindow.init(SimTK::Array_<SimTK::Vec2>(2, SimTK::Vec2(0.0)));
+    lSlidingWindow.init(SimTK::Array_<SimTK::Vec2>(2, SimTK::Vec2(0.0)));
 
     // initialize bw filters
     posFilter = new ButterworthFilter(12, parameters.posLPFilterOrder,
@@ -89,11 +87,11 @@ void AccelerationBasedPhaseDetector::updDetector(
     auto lToePos = toeStationL->getLocationInGround(state);
 
     // prepare for filtering
-    Vector v(12);
-    v(0, 3) = Vector(rHeelPos);
-    v(3, 3) = Vector(lHeelPos);
-    v(6, 3) = Vector(rToePos);
-    v(9, 3) = Vector(lToePos);
+    SimTK::Vector v(12);
+    v(0, 3) = SimTK::Vector(rHeelPos);
+    v(3, 3) = SimTK::Vector(lHeelPos);
+    v(6, 3) = SimTK::Vector(rToePos);
+    v(9, 3) = SimTK::Vector(lToePos);
 
     // apply filters and differentiators
     auto x = posFilter->filter(v);
@@ -101,22 +99,22 @@ void AccelerationBasedPhaseDetector::updDetector(
     auto xDDot = accFilter->filter(velDiff->diff(input.t, xDot));
 
     // get station accelerations
-    auto rHeelAcc = Vec3(&xDDot[0]);
-    auto lHeelAcc = Vec3(&xDDot[3]);
-    auto rToeAcc = Vec3(&xDDot[6]);
-    auto lToeAcc = Vec3(&xDDot[9]);
+    auto rHeelAcc = SimTK::Vec3(&xDDot[0]);
+    auto lHeelAcc = SimTK::Vec3(&xDDot[3]);
+    auto rToeAcc = SimTK::Vec3(&xDDot[6]);
+    auto lToeAcc = SimTK::Vec3(&xDDot[9]);
 
     // append to sliding windows a state value representing if the acceleration
     // exceeded the threshold.
     rSlidingWindow.insert(
-            Vec2((rToeAcc.norm() - parameters.toeAccThreshold > 0) ? 1 : 0,
+            SimTK::Vec2((rToeAcc.norm() - parameters.toeAccThreshold > 0) ? 1 : 0,
                  (rHeelAcc.norm() - parameters.heelAccThreshold > 0) ? 1 : 0));
     lSlidingWindow.insert(
-            Vec2((lToeAcc.norm() - parameters.toeAccThreshold > 0) ? 1 : 0,
+            SimTK::Vec2((lToeAcc.norm() - parameters.toeAccThreshold > 0) ? 1 : 0,
                  (lHeelAcc.norm() - parameters.heelAccThreshold > 0) ? 1 : 0));
 
     // NOTE: state diagram logic
-    // | acc_heel | acc_toe | Leg State |
+    // | acc_heel | acc_toe | Leg SimTK::State |
     // |----------|---------|-----------|
     // |    0     |    0    |  STANCE   |
     // |    0     |    1    |  STANCE   |
@@ -124,10 +122,10 @@ void AccelerationBasedPhaseDetector::updDetector(
     // |    1     |    1    |  SWING    |
 
     // determine change in leg state based on the states in windows. If both toe
-    // and heel acceleration states are 1 (i.e, Vec2(1,1)) it results in SWING,
+    // and heel acceleration states are 1 (i.e, SimTK::Vec2(1,1)) it results in SWING,
     // else results in STANCE (NOTE: opposite of forces)
-    double rPhase = (rSlidingWindow.equal(Vec2(1, 1))) ? -1 : 1;
-    double lPhase = (lSlidingWindow.equal(Vec2(1, 1))) ? -1 : 1;
+    double rPhase = (rSlidingWindow.equal(SimTK::Vec2(1, 1))) ? -1 : 1;
+    double lPhase = (lSlidingWindow.equal(SimTK::Vec2(1, 1))) ? -1 : 1;
 
     // update detector internal state
     updDetectorState(input.t, rPhase, lPhase);

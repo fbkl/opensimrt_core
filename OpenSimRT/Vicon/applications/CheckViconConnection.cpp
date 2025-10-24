@@ -30,8 +30,6 @@
 
 using namespace std;
 using namespace OpenSimRT;
-using namespace SimTK;
-
 void run() {
     // subject data
     INIReader ini(INI_FILE);
@@ -45,7 +43,7 @@ void run() {
 
     // setup vicon
     ViconDataStream vicon(
-            vector<Vec3>{Vec3(forcePlate00X, forcePlate00Y, forcePlate00Z)});
+            vector<SimTK::Vec3>{SimTK::Vec3(forcePlate00X, forcePlate00Y, forcePlate00Z)});
     vicon.connect(hostName);
     vicon.initialize(stringToDirection(referenceFrameX),
                      stringToDirection(referenceFrameY),

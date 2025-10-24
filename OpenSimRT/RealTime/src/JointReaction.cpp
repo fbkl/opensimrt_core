@@ -23,7 +23,6 @@
 
 using namespace std;
 using namespace OpenSim;
-using namespace SimTK;
 using namespace OpenSimRT;
 
 /*******************************************************************************/
@@ -81,8 +80,8 @@ JointReaction::Output JointReaction::solve(const JointReaction::Input& input) {
     int nb = model.getNumBodies();
     Output output;
     output.t = input.t;
-    output.reactionWrench = Vector_<SpatialVec>(nb);
-    model.getMultibodySystem().realize(state, Stage::Acceleration);
+    output.reactionWrench = SimTK::Vector_<SimTK::SpatialVec>(nb);
+    model.getMultibodySystem().realize(state, SimTK::Stage::Acceleration);
     model.getMatterSubsystem().calcMobilizerReactionForces(
             state, output.reactionWrench);
 
@@ -95,22 +94,22 @@ JointReaction::asForceMomentPoint(const JointReaction::Output& jrOutput) {
     const auto& joints = model.getJointSet();
     const auto& ground = model.getGround();
 
-    Vector out(nj * 9);
+    SimTK::Vector out(nj * 9);
     for (int i = 0; i < nj; ++i) {
         auto jointReaction =
                 joints[i].calcReactionOnChildExpressedInGround(state);
 
         // find the point of application in immediate child frame, then
         // transform to the base frame of the child (expressedInBody)
-        Vec3 childLocationInGlobal =
+        SimTK::Vec3 childLocationInGlobal =
                 joints[i].getChildFrame().getTransformInGround(state).p();
         auto pointOfApplication = ground.findStationLocationInGround(
                 state, childLocationInGlobal);
 
-        // transform SpatialVec of reaction forces and moments to the
+        // transform SimTK::SpatialVec of reaction forces and moments to the
         // requested base frame (expressedInBody)
-        Vec3 force = ground.expressVectorInGround(state, jointReaction[1]);
-        Vec3 moment = ground.expressVectorInGround(state, jointReaction[0]);
+        SimTK::Vec3 force = ground.expressVectorInGround(state, jointReaction[1]);
+        SimTK::Vec3 moment = ground.expressVectorInGround(state, jointReaction[0]);
 
         /* place results in the truncated loads vectors*/
         out[i * 9 + 0] = force[0];

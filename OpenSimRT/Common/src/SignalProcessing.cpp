@@ -30,7 +30,6 @@
 #include <math.h>
 
 using namespace std;
-using namespace SimTK;
 using namespace OpenSimRT;
 
 // Savitzky–Golay smoothing coefficients
@@ -54,8 +53,8 @@ std::map<int, std::vector<double>> SG_DERIVATIVE_COEF{
         {7, {0.10714, 0.07143, 0.03571, 0, -0.03571, -0.07143, -0.10714}}};
 
 /******************************************************************************/
-Vector binomial_mult(const int& n, const Vector& p) {
-    Vector a(2 * n, 0.0);
+SimTK::Vector binomial_mult(const int& n, const SimTK::Vector& p) {
+    SimTK::Vector a(2 * n, 0.0);
     for (int i = 0; i < n; ++i) {
         for (int j = i; j > 0; --j) {
             a[2 * j] += p[2 * i] * a[2 * (j - 1)] -
@@ -69,7 +68,7 @@ Vector binomial_mult(const int& n, const Vector& p) {
     return a;
 }
 
-void shiftColumnsRight(const Vector& column, Matrix& shifted) {
+void shiftColumnsRight(const SimTK::Vector& column, SimTK::Matrix& shifted) {
     if (column.size() != shifted.nrow()) {
         THROW_EXCEPTION("column vector and matrix have different dimentions" +
                         toString(column.size()) +
@@ -81,7 +80,7 @@ void shiftColumnsRight(const Vector& column, Matrix& shifted) {
     shifted(0) = column;
 }
 
-void shiftColumnsLeft(const Vector& column, Matrix& shifted) {
+void shiftColumnsLeft(const SimTK::Vector& column, SimTK::Matrix& shifted) {
     if (column.size() != shifted.nrow()) {
         THROW_EXCEPTION("column vector and matrix have different dimentions" +
                         toString(column.size()) +
@@ -109,14 +108,14 @@ LowPassSmoothFilter::LowPassSmoothFilter(const Parameters& parameters)
         }
     }
 
-    time = Matrix(1, parameters.memory, 0.0);
-    data = Matrix(parameters.numSignals, parameters.memory, 0.0);
+    time = SimTK::Matrix(1, parameters.memory, 0.0);
+    data = SimTK::Matrix(parameters.numSignals, parameters.memory, 0.0);
 }
 
 LowPassSmoothFilter::Output
 LowPassSmoothFilter::filter(const LowPassSmoothFilter::Input& input) {
     // shift data column left and set last column as the new data
-    shiftColumnsLeft(Vector(1, input.t), time);
+    shiftColumnsLeft(SimTK::Vector(1, input.t), time);
     shiftColumnsLeft(input.x, data);
 
     // initialize variables
@@ -129,9 +128,9 @@ LowPassSmoothFilter::filter(const LowPassSmoothFilter::Input& input) {
     // output
     Output output;
     output.t = time[0][M - D - 1];
-    output.x = Vector(N);
-    output.xDot = Vector(N);
-    output.xDDot = Vector(N);
+    output.x = SimTK::Vector(N);
+    output.xDot = SimTK::Vector(N);
+    output.xDDot = SimTK::Vector(N);
     output.isValid = true;
 
     // check if initialized
@@ -165,10 +164,10 @@ LowPassSmoothFilter::filter(const LowPassSmoothFilter::Input& input) {
         if (parameters.calculateDerivatives) {
             OpenSim::GCVSpline spline(parameters.splineOrder, M, &time[0][0],
                                       xFiltered);
-            output.x[i] = spline.calcValue(Vector(1, output.t));
-            output.xDot[i] = spline.calcDerivative({0}, Vector(1, output.t));
+            output.x[i] = spline.calcValue(SimTK::Vector(1, output.t));
+            output.xDot[i] = spline.calcDerivative({0}, SimTK::Vector(1, output.t));
             output.xDDot[i] =
-                    spline.calcDerivative({0, 0}, Vector(1, output.t));
+                    spline.calcDerivative({0, 0}, SimTK::Vector(1, output.t));
         } else {
             output.x[i] = xFiltered[M - D - 1];
         }
@@ -185,12 +184,12 @@ LowPassSmoothFilter::filter(const LowPassSmoothFilter::Input& input) {
 
 StateSpaceFilter::StateSpaceFilter(const Parameters& parameters)
         : fc(parameters.cutoffFrequency), nc(parameters.numSignals),
-          state(Output{numeric_limits<double>::infinity(), Vector(nc, 0.0),
-                       Vector(nc, 0.0), Vector(nc, 0.0), false}) {}
+          state(Output{numeric_limits<double>::infinity(), SimTK::Vector(nc, 0.0),
+                       SimTK::Vector(nc, 0.0), SimTK::Vector(nc, 0.0), false}) {}
 
 StateSpaceFilter::Output StateSpaceFilter::filter(const Input& input) {
     double t = input.t - 0.07; // compensate for filter lag
-    Vector x(nc, &input.x[0]); // we copy because vector is transposed
+    SimTK::Vector x(nc, &input.x[0]); // we copy because vector is transposed
     if (t < state.t) {
         state.x = x;
         state.xDot = 0.0;
@@ -206,8 +205,8 @@ StateSpaceFilter::Output StateSpaceFilter::filter(const Input& input) {
         double D = (4 - 2 * h * b - h * h * a) / denom;
         double E = 2 * h * h * a / denom;
         double F = 4 * h * a / denom;
-        Vector y = A * state.x + B * state.xDot + E * (x + state.x) / 2;
-        Vector yd = C * state.x + D * state.xDot + F * (x + state.x) / 2;
+        SimTK::Vector y = A * state.x + B * state.xDot + E * (x + state.x) / 2;
+        SimTK::Vector yd = C * state.x + D * state.xDot + F * (x + state.x) / 2;
         state.xDDot = (yd - state.xDot) / h;
         state.xDot = yd;
         state.x = y;
@@ -219,24 +218,24 @@ StateSpaceFilter::Output StateSpaceFilter::filter(const Input& input) {
 
 /******************************************************************************/
 
-IIRFilter::IIRFilter(int n, const Vector& aa, const Vector& bb,
+IIRFilter::IIRFilter(int n, const SimTK::Vector& aa, const SimTK::Vector& bb,
                      InitialValuePolicy policy)
         : n(n), iv(policy) {
     a = aa(1, aa.size() - 1) / aa[0];
     b = bb / aa[0];
     m = a.size();
-    X = Matrix(n, b.size(), 0.0);
-    Y = Matrix(n, a.size(), 0.0);
+    X = SimTK::Matrix(n, b.size(), 0.0);
+    Y = SimTK::Matrix(n, a.size(), 0.0);
 }
 
-Vector IIRFilter::filter(const Vector& xn) {
+SimTK::Vector IIRFilter::filter(const SimTK::Vector& xn) {
     if (xn.size() != n) {
         THROW_EXCEPTION("input has incorrect dimensions " +
                         toString(xn.size()) + " != " + toString(n));
     }
     if (m == 0) {
         shiftColumnsRight(xn, X);
-        Matrix yn = X * b - Y * a;
+        SimTK::Matrix yn = X * b - Y * a;
         shiftColumnsRight(yn(0), Y);
         return Y(0);
     } else {
@@ -244,9 +243,9 @@ Vector IIRFilter::filter(const Vector& xn) {
         shiftColumnsRight(xn, Y);
         m--;
         if (iv == Zero) {
-            return Vector(n, 0.0);
+            return SimTK::Vector(n, 0.0);
         } else if (iv == Signal) {
-            return Vector(xn.size(), &xn[0]);
+            return SimTK::Vector(xn.size(), &xn[0]);
         } else {
             THROW_EXCEPTION("undefined initial value policy");
         }
@@ -266,8 +265,8 @@ void ButterworthFilter::setupFilter(
         THROW_EXCEPTION(
                 "Digital filter critical frequencies must be 0 < Wn < 1");
     double sf; // scaling factor
-    Vector a;  // denominator coefficients
-    Vector b;  // numerator coefficients
+    SimTK::Vector a;  // denominator coefficients
+    SimTK::Vector b;  // numerator coefficients
     if (type == FilterType::LowPass) {
         sf = sf_bwlp(filtOrder, cutOffFreq);
         a = dcof_bwlp(filtOrder, cutOffFreq);
@@ -284,8 +283,8 @@ void ButterworthFilter::setupFilter(
     iir = new IIRFilter(dim, a, b, policy);
 }
 
-Vector ButterworthFilter::ccof_bwlp(const int& n) {
-    Vector ccof(n + 1, 0.0);
+SimTK::Vector ButterworthFilter::ccof_bwlp(const int& n) {
+    SimTK::Vector ccof(n + 1, 0.0);
 
     ccof[0] = 1;
     ccof[1] = n;
@@ -300,8 +299,8 @@ Vector ButterworthFilter::ccof_bwlp(const int& n) {
     return ccof;
 }
 
-Vector ButterworthFilter::dcof_bwlp(const int& n, const double& fcf) {
-    Vector rcof(2 * n, 0.0);
+SimTK::Vector ButterworthFilter::dcof_bwlp(const int& n, const double& fcf) {
+    SimTK::Vector rcof(2 * n, 0.0);
     const double theta = M_PI * fcf;
     const double st = sin(theta);
     const double ct = cos(theta);
@@ -339,7 +338,7 @@ double ButterworthFilter::sf_bwlp(const int& n, const double& fcf) {
     return sf;
 }
 
-Vector ButterworthFilter::ccof_bwhp(const int& n) {
+SimTK::Vector ButterworthFilter::ccof_bwhp(const int& n) {
     auto ccof = ccof_bwlp(n);
 
     for (int i = 0; i <= n; ++i)
@@ -348,7 +347,7 @@ Vector ButterworthFilter::ccof_bwhp(const int& n) {
     return ccof;
 }
 
-Vector ButterworthFilter::dcof_bwhp(const int& n, const double& fcf) {
+SimTK::Vector ButterworthFilter::dcof_bwhp(const int& n, const double& fcf) {
     return dcof_bwlp(n, fcf);
 }
 
@@ -369,28 +368,28 @@ double ButterworthFilter::sf_bwhp(const int& n, const double& fcf) {
     return sf;
 }
 
-Vector ButterworthFilter::filter(const SimTK::Vector& xn) {
+SimTK::Vector ButterworthFilter::filter(const SimTK::Vector& xn) {
     return iir->filter(xn);
 }
 
 /******************************************************************************/
 
-FIRFilter::FIRFilter(int n, const Vector& b, InitialValuePolicy policy)
+FIRFilter::FIRFilter(int n, const SimTK::Vector& b, InitialValuePolicy policy)
         : n(n), b(b), m(b.size()), X(n, b.size(), 0.0), iv(policy) {}
 
-Vector FIRFilter::filter(const Vector& xn) {
+SimTK::Vector FIRFilter::filter(const SimTK::Vector& xn) {
     if (xn.size() != n) {
         THROW_EXCEPTION("input has incorrect dimensions " +
                         toString(xn.size()) + " !=" + toString(n));
     }
-    Vector x;
+    SimTK::Vector x;
     if (m == 0) {
         shiftColumnsRight(xn, X);
         x = X * b;
     } else {
         shiftColumnsRight(xn, X);
         if (iv == Zero) {
-            x = Vector(n, 0.0);
+            x = SimTK::Vector(n, 0.0);
         } else if (iv == Signal) {
             x = xn;
         } else {
@@ -404,19 +403,19 @@ Vector FIRFilter::filter(const Vector& xn) {
 /******************************************************************************/
 
 SavitzkyGolay::SavitzkyGolay(int n, int m)
-        : FIRFilter(n, Vector(m, &SG_SMOOTHING_COEF[ENSURE_BOUNDS(m, 2, 7)][0]),
+        : FIRFilter(n, SimTK::Vector(m, &SG_SMOOTHING_COEF[ENSURE_BOUNDS(m, 2, 7)][0]),
                     Signal) {}
 
 /******************************************************************************/
 
 NumericalDifferentiator::NumericalDifferentiator(int n, int m)
         : FIRFilter(n,
-                    Vector(m, &SG_DERIVATIVE_COEF[ENSURE_BOUNDS(m, 2, 7)][0]),
+                    SimTK::Vector(m, &SG_DERIVATIVE_COEF[ENSURE_BOUNDS(m, 2, 7)][0]),
                     Zero),
           t(0.0) {}
 
-Vector NumericalDifferentiator::diff(double tn, const Vector& xn) {
-    Vector dx;
+SimTK::Vector NumericalDifferentiator::diff(double tn, const SimTK::Vector& xn) {
+    SimTK::Vector dx;
     if (t < tn) {
         dx = filter(xn) / (tn - t);
     } else {

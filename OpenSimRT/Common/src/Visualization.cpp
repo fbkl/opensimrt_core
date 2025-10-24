@@ -34,15 +34,14 @@
 
 using namespace std;
 using namespace chrono;
-using namespace SimTK;
 using namespace OpenSimRT;
 
 /******************************************************************************/
 
 FPSDecorator::FPSDecorator() : text("") {}
 
-void FPSDecorator::generateDecorations(const State& state,
-		Array_<DecorativeGeometry>& geometry) {
+void FPSDecorator::generateDecorations(const SimTK::State& state,
+		SimTK::Array_<DecorativeGeometry>& geometry) {
 	DecorativeText info;
 	info.setIsScreenText(true);
 	info.setText(text);
@@ -74,7 +73,7 @@ milliseconds FPSDecorator::calculateLoopDelay() {
 
 /******************************************************************************/
 
-ForceDecorator::ForceDecorator(Vec3 color, double scaleFactor, int lineThikness)
+ForceDecorator::ForceDecorator(SimTK::Vec3 color, double scaleFactor, int lineThikness)
 	: color(color), scaleFactor(scaleFactor), lineThikness(lineThikness) {
 
 		mbdIndex = GroundIndex;
@@ -85,8 +84,8 @@ ForceDecorator::ForceDecorator(Vec3 color, double scaleFactor, int lineThikness)
 		this->force = force;
 	}
 
-void ForceDecorator::generateDecorations(const State& state,
-		Array_<DecorativeGeometry>& geometry) {
+void ForceDecorator::generateDecorations(const SimTK::State& state,
+		SimTK::Array_<DecorativeGeometry>& geometry) {
 	if(mbdIndex.isValid())
 		geometry.push_back(
 			DecorativeLine(point, point + scaleFactor *force)
@@ -94,7 +93,7 @@ void ForceDecorator::generateDecorations(const State& state,
 			.setColor(color)
 			.setLineThickness(lineThikness));
 	else
-	{cerr << "MobilizedBodyIndex isnt valid" <<endl;
+	{cerr << "SimTK::MobilizedBodyIndex isnt valid" <<endl;
 		geometry.push_back(
 			DecorativeLine(point, point + scaleFactor *force)
 			.setColor(color)
@@ -111,7 +110,7 @@ void ForceDecorator::setOriginByName(const OpenSim::Model& model, std::string na
 			const auto& body = model.getBodySet()[bodyIndex];
 			mbdIndex = body.getMobilizedBodyIndex();
 			if (mbdIndex.isValid())
-				cout << "all ok here: bodyindex: "<< bodyIndex << "MobilizedBodyIndex: "<< mbdIndex <<endl;
+				cout << "all ok here: bodyindex: "<< bodyIndex << "SimTK::MobilizedBodyIndex: "<< mbdIndex <<endl;
 			else
 				mbdIndex = GroundIndex;
 		}
@@ -148,7 +147,7 @@ BasicModelVisualizer::BasicModelVisualizer(const OpenSim::Model& otherModel)
 		visualizer->setDesiredFrameRate(60);
 
 		// add menu to visualizer //// TODO: add more if required
-		Array_<std::pair<String, int> > runMenuItems;
+		SimTK::Array_<std::pair<SimTK::String, int> > runMenuItems;
 		runMenuItems.push_back(std::make_pair("Quit", int(SimMenuItem::QUIT)));
 		runMenuItems.push_back(std::make_pair("Publish TFs", int(SimMenuItem::TFS)));
 		visualizer->addMenu("Simulation", int(MenuID::SIMULATION), runMenuItems);
@@ -176,8 +175,8 @@ void BasicModelVisualizer::refreshModel()
 			cerr << "model not ok" << endl;
 }
 
-void BasicModelVisualizer::update(const Vector& q,
-		const Vector& muscleActivations) {
+void BasicModelVisualizer::update(const SimTK::Vector& q,
+		const SimTK::Vector& muscleActivations) {
 #ifndef CONTINUOUS_INTEGRATION
 	fps->calculateLoopDelay();
 #endif
@@ -190,7 +189,7 @@ void BasicModelVisualizer::update(const Vector& q,
 		for (int i = 0; i < model.getMuscles().getSize(); ++i) {
 			model.updMuscles().get(i).getGeometryPath().setColor(
 					state,
-					Vec3(muscleActivations[i], 0, 1 - muscleActivations[i]));
+					SimTK::Vec3(muscleActivations[i], 0, 1 - muscleActivations[i]));
 		}
 	}
 #ifndef CONTINUOUS_INTEGRATION
@@ -243,10 +242,10 @@ void BasicModelVisualizer::update(const Vector& q,
 			continue;
 			}
 
-			const Transform X_GB = frame->getTransformInGround(state);
+			const SimTK::Transform X_GB = frame->getTransformInGround(state);
 			//std::cout << body.getName() << ": " << X_GB << std::endl;
-			Vec3 translation = X_GB.p();
-			Quaternion rotation = X_GB.R().convertRotationToQuaternion();
+			SimTK::Vec3 translation = X_GB.p();
+			SimTK::Quaternion rotation = X_GB.R().convertRotationToQuaternion();
 			//std::cout << body.getName() << "translation: " << translation << "rotation:" << rotation << std::endl;
 			geometry_msgs::Transform tff;
 			tff.translation.x = translation[0];
@@ -266,12 +265,12 @@ void BasicModelVisualizer::update(const Vector& q,
 }
 
 void BasicModelVisualizer::updateReactionForceDecorator(
-		const Vector_<SpatialVec>& reactionWrench, const string& reactionOnBody,
+		const SimTK::Vector_<SimTK::SpatialVec>& reactionWrench, const string& reactionOnBody,
 		ForceDecorator* reactionForceDecorator) {
 	auto bodyIndex = model.getBodySet().getIndex(reactionOnBody, 0);
 	const auto& body = model.getBodySet()[bodyIndex];
 	auto force = -reactionWrench[bodyIndex](1); // mirror force (1)
-	auto joint = body.findStationLocationInGround(state, Vec3(0));
+	auto joint = body.findStationLocationInGround(state, SimTK::Vec3(0));
 	reactionForceDecorator->update(joint, force);
 }
 
