@@ -41,7 +41,7 @@ using namespace OpenSimRT;
 FPSDecorator::FPSDecorator() : text("") {}
 
 void FPSDecorator::generateDecorations(const SimTK::State& state,
-		SimTK::Array_<DecorativeGeometry>& geometry) {
+		SimTK::Array_<SimTK::DecorativeGeometry>& geometry) {
 	DecorativeText info;
 	info.setIsScreenText(true);
 	info.setText(text);
@@ -76,7 +76,7 @@ milliseconds FPSDecorator::calculateLoopDelay() {
 ForceDecorator::ForceDecorator(SimTK::Vec3 color, double scaleFactor, int lineThikness)
 	: color(color), scaleFactor(scaleFactor), lineThikness(lineThikness) {
 
-		mbdIndex = GroundIndex;
+		mbdIndex = SimTK::GroundIndex;
 	}
 
 	void ForceDecorator::update(SimTK::Vec3 point, SimTK::Vec3 force) {
@@ -85,7 +85,7 @@ ForceDecorator::ForceDecorator(SimTK::Vec3 color, double scaleFactor, int lineTh
 	}
 
 void ForceDecorator::generateDecorations(const SimTK::State& state,
-		SimTK::Array_<DecorativeGeometry>& geometry) {
+		SimTK::Array_<SimTK::DecorativeGeometry>& geometry) {
 	if(mbdIndex.isValid())
 		geometry.push_back(
 			DecorativeLine(point, point + scaleFactor *force)
@@ -112,7 +112,7 @@ void ForceDecorator::setOriginByName(const OpenSim::Model& model, std::string na
 			if (mbdIndex.isValid())
 				cout << "all ok here: bodyindex: "<< bodyIndex << "SimTK::MobilizedBodyIndex: "<< mbdIndex <<endl;
 			else
-				mbdIndex = GroundIndex;
+				mbdIndex = SimTK::GroundIndex;
 		}
 		else
 		{
@@ -142,7 +142,7 @@ BasicModelVisualizer::BasicModelVisualizer(const OpenSim::Model& otherModel)
 		silo = &model.updVisualizer().updInputSilo();
 		visualizer->setShowFrameRate(false);
 		visualizer->setShutdownWhenDestructed(true);
-		visualizer->setMode(Visualizer::Mode::Sampling);
+		visualizer->setMode(SimTK::Visualizer::Mode::Sampling);
 		visualizer->setDesiredBufferLengthInSec(5);
 		visualizer->setDesiredFrameRate(60);
 
@@ -197,7 +197,7 @@ void BasicModelVisualizer::update(const SimTK::Vector& q,
 	// terminate if ESC key is pressed
 	unsigned key, modifiers;
 	if (silo->takeKeyHit(key, modifiers)) {
-		if (key == Visualizer::InputListener::KeyEsc) {
+		if (key == SimTK::Visualizer::InputListener::KeyEsc) {
 			shouldTerminate = true;
 			silo->clear();
 		}

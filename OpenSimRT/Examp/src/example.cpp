@@ -100,7 +100,7 @@ int main() {
 
 	// Add display geometry.
 	Ellipsoid bodyGeometry(0.1, 0.5, 0.1);
-	bodyGeometry.setColor(Gray);
+	bodyGeometry.setColor(SimTK::Gray);
 	// Attach an ellipsoid to a frame located at the center of each body.
 	PhysicalOffsetFrame* humerusCenter = new PhysicalOffsetFrame(
 			"humerusCenter", *humerus, SimTK::Transform(SimTK::Vec3(0, 0.5, 0)));
@@ -121,9 +121,9 @@ int main() {
 
 	// Configure the visualizer.
 	model.updMatterSubsystem().setShowDefaultGeometry(true);
-	Visualizer& viz = model.updVisualizer().updSimbodyVisualizer();
+	SimTK::Visualizer& viz = model.updVisualizer().updSimbodyVisualizer();
 	viz.setBackgroundType(viz.SolidColor);
-	viz.setBackgroundColor(White);
+	viz.setBackgroundColor(SimTK::White);
 	
 
 	// Simulate.
