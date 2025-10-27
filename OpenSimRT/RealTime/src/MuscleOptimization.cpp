@@ -55,7 +55,7 @@ MuscleOptimization::MuscleOptimization(
     target = new TorqueBasedTarget(&model,
                                    optimizationParameters.objectiveExponent,
                                    momentArmFunction);
-    optimizer = new Optimizer(*target, OptimizerAlgorithm::InteriorPoint);
+    optimizer = new SimTK::Optimizer(*target, OptimizerAlgorithm::InteriorPoint);
     optimizer->setConvergenceTolerance(
             optimizationParameters.convergenceTolerance);
     optimizer->setMaxIterations(optimizationParameters.maximumIterations);
