@@ -147,7 +147,7 @@ void MarkerReconstruction::reconstructionMethod(
     SimTK::Matrix leftVectors;
     SimTK::Vector singularValues;
 
-    FactorSVD svd(A * (~B));
+    SimTK::FactorSVD svd(A * (~B));
     svd.getSingularValuesAndVectors(singularValues, leftVectors, rightVectors);
 
     // rotation matrix R = V * U**T

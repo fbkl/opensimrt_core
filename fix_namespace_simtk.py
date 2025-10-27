@@ -86,6 +86,12 @@ SIMTK_TYPES = [
     "SubsystemIndex",
     "DiscreteVariableIndex",
     "DefaultSystemSubsystem",
+    "FactorSVD",
+    "Optimizer",
+    "OptimizerAlgorithm",
+    "Markers",
+    "Assembler",
+    "OrientationSensors",
     # Add more types here as you discover them
 ]
 
