@@ -232,7 +232,7 @@ void BasicModelVisualizer::update(const SimTK::Vector& q,
 			const OpenSim::Body& body = bodies->get(i);
 			const std::string& bodyname = body.getName();
 
-			some_tf.child_frame_id = bodyname;
+			some_tf.child_frame_id = tf_prefix + bodyname;
 			// TODO: the correct way here is with model find component <PhisicalFrame> and a pointer using body.getName() , i think,,, the way i did is deprecated, but we are lazy.
 			const OpenSim::PhysicalFrame* frame = model.findComponent<OpenSim::PhysicalFrame>
 ("/bodyset/"+bodyname);

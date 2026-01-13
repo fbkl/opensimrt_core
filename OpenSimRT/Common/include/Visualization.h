@@ -124,6 +124,7 @@ class Common_API BasicModelVisualizer {
     void refreshModel();
     SimTK::ReferencePtr<FPSDecorator> fps;
     bool publish_transforms = false;
+    std::string tf_prefix = "";
  private:
     const OpenSim::BodySet* bodies = nullptr;
     //const OpenSim::SimbodyEngine* myEngine = nullptr;
