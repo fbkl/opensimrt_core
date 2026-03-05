@@ -32,7 +32,7 @@ namespace Ros
 	class CommonNode:public SaverNode
 	{
 		public:
-			CommonNode(bool Debug=true);
+			CommonNode(bool Debug=false);
 			virtual ~CommonNode() override;
 			bool published_labels_at_least_once = false;
 
