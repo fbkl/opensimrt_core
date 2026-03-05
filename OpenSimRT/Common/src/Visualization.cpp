@@ -130,26 +130,32 @@ void ForceDecorator::setOriginByName(const OpenSim::Model& model, std::string na
 
 ModelObserver::ModelObserver(const OpenSim::Model& otherModel)
 	: model(*otherModel.clone()), shouldTerminate(false), fps(new FPSDecorator()) {
-#ifndef CONTINUOUS_INTEGRATION
-		model.setUseVisualizer(true);
-#endif
 		ros::NodeHandle n("~");
 
-		state = model.initSystem();
-
-#ifndef CONTINUOUS_INTEGRATION
-		//		setVisualizer();
-#endif
-		bodies = &model.getBodySet();
 		//myEngine = &model.getSimbodyEngine();	
 		sameHeader.frame_id = "opensim_frame";
 	}
 
+BasicModelVisualizer::BasicModelVisualizer(const OpenSim::Model& otherModel):
+	ModelObserver(*otherModel.clone())
+{
+#ifndef CONTINUOUS_INTEGRATION
+		model.setUseVisualizer(true);
+#endif
+}
+
+void ModelObserver::setVisualizer(){
+
+		state = model.initSystem();
+		bodies = &model.getBodySet();
+
+}
 
 
 
 void BasicModelVisualizer::setVisualizer() {
 
+		ModelObserver::setVisualizer();
 		if (true)
 		{
 		visualizer = &model.updVisualizer().updSimbodyVisualizer();

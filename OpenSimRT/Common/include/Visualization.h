@@ -124,7 +124,7 @@ namespace OpenSimRT {
 			SimTK::ReferencePtr<FPSDecorator> fps;
 			bool publish_transforms = false;
 			std::string tf_prefix = "";
-			virtual void setVisualizer() {ROS_INFO("setVisualizer does nothing for modelObserver");};
+			virtual void setVisualizer();
 		protected:
 			virtual void visualUpdate() {ROS_INFO("visualUpdate does nothing for modelObserver");};
 			const OpenSim::BodySet* bodies = nullptr;
@@ -142,7 +142,8 @@ namespace OpenSimRT {
 	class BasicModelVisualizer : public ModelObserver
 	{
 		public: 
-			using ModelObserver::ModelObserver; //this inherits the constructors from ModelObserver too
+			BasicModelVisualizer(const OpenSim::Model& model);
+			//using ModelObserver::ModelObserver; //this inherits the constructors from ModelObserver too
 			void refreshModel() override;
 			void addDecorationGenerator(SimTK::DecorationGenerator* generator);
 			void setVisualizer() override;
