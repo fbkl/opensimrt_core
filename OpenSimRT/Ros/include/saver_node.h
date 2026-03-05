@@ -19,7 +19,7 @@ namespace Ros
 	class SaverNode
 	{
 		public:
-			SaverNode(bool Debug=true);
+			SaverNode(bool Debug=false);
 			virtual ~SaverNode();
 			ros::NodeHandle nh{"~"};
 			NamedTables loggers;
