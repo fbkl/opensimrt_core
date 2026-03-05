@@ -128,7 +128,7 @@ void ForceDecorator::setOriginByName(const OpenSim::Model& model, std::string na
 
 /******************************************************************************/
 
-BasicModelVisualizer::BasicModelVisualizer(const OpenSim::Model& otherModel)
+ModelObserver::ModelObserver(const OpenSim::Model& otherModel)
 	: model(*otherModel.clone()), shouldTerminate(false), fps(new FPSDecorator()) {
 #ifndef CONTINUOUS_INTEGRATION
 		model.setUseVisualizer(true);
@@ -138,6 +138,20 @@ BasicModelVisualizer::BasicModelVisualizer(const OpenSim::Model& otherModel)
 		state = model.initSystem();
 
 #ifndef CONTINUOUS_INTEGRATION
+		//		setVisualizer();
+#endif
+		bodies = &model.getBodySet();
+		//myEngine = &model.getSimbodyEngine();	
+		sameHeader.frame_id = "opensim_frame";
+	}
+
+
+
+
+void BasicModelVisualizer::setVisualizer() {
+
+		if (true)
+		{
 		visualizer = &model.updVisualizer().updSimbodyVisualizer();
 		silo = &model.updVisualizer().updInputSilo();
 		visualizer->setShowFrameRate(false);
@@ -156,32 +170,70 @@ BasicModelVisualizer::BasicModelVisualizer(const OpenSim::Model& otherModel)
 		//fps = new FPSDecorator();
 		visualizer->addDecorationGenerator(fps.get());
 		//fps->actual_delay =
-#endif
-		bodies = &model.getBodySet();
-		//myEngine = &model.getSimbodyEngine();	
-		sameHeader.frame_id = "opensim_frame";
-	}
+		}
+
+}
 
 
 void BasicModelVisualizer::refreshModel()
 {
-		if(model.isValidSystem())
+	if(model.isValidSystem())
 		{
 			cout << "model ok" <<endl;
-		visualizer = &model.updVisualizer().updSimbodyVisualizer();
+			visualizer = &model.updVisualizer().updSimbodyVisualizer();
 	
 		}
-		else
+	else
 			cerr << "model not ok" << endl;
 }
 
-void BasicModelVisualizer::update(const SimTK::Vector& q,
+void BasicModelVisualizer::visualUpdate()
+{
+							ROS_DEBUG("entered visual update, attempting to report current state");
+		visualizer->report(state);
+
+							ROS_DEBUG("going through silos to check events");
+		// terminate if ESC key is pressed
+		unsigned key, modifiers;
+		if (silo->takeKeyHit(key, modifiers)) {
+			if (key == SimTK::Visualizer::InputListener::KeyEsc) {
+				shouldTerminate = true;
+				silo->clear();
+			}
+		}
+
+		// terminate simulation when menu option is selected
+		int menuId = -1, item = -1;
+		silo->takeMenuPick(menuId, item);
+		if (menuId == int(MenuID::SIMULATION) && item == int(SimMenuItem::QUIT)) {
+			shouldTerminate = true;
+		}
+
+		if (menuId == int(MenuID::SIMULATION) && item == int(SimMenuItem::TFS)) {
+			publish_transforms = !publish_transforms;
+		}
+
+		if (shouldTerminate) {
+			visualizer->shutdown();
+			THROW_EXCEPTION("Shutdown visualizer message received.");
+		}
+
+
+
+}
+
+void ModelObserver::update(const SimTK::Vector& q,
 		const SimTK::Vector& muscleActivations) {
 #ifndef CONTINUOUS_INTEGRATION
-	fps->calculateLoopDelay();
+							ROS_DEBUG("entered vis update");
+
+	if (true) fps->calculateLoopDelay();
 #endif
 	// kinematics
+							ROS_DEBUG("atempting at updating state");
 	state.updQ() = q;
+
+							ROS_DEBUG("updating model with state");
 	model.realizePosition(state);
 	// muscle activations
 	// TODO handle path actuators
@@ -193,31 +245,7 @@ void BasicModelVisualizer::update(const SimTK::Vector& q,
 		}
 	}
 #ifndef CONTINUOUS_INTEGRATION
-	visualizer->report(state);
-	// terminate if ESC key is pressed
-	unsigned key, modifiers;
-	if (silo->takeKeyHit(key, modifiers)) {
-		if (key == SimTK::Visualizer::InputListener::KeyEsc) {
-			shouldTerminate = true;
-			silo->clear();
-		}
-	}
-
-	// terminate simulation when menu option is selected
-	int menuId = -1, item = -1;
-	silo->takeMenuPick(menuId, item);
-	if (menuId == int(MenuID::SIMULATION) && item == int(SimMenuItem::QUIT)) {
-		shouldTerminate = true;
-	}
-
-	if (menuId == int(MenuID::SIMULATION) && item == int(SimMenuItem::TFS)) {
-		publish_transforms = !publish_transforms;
-	}
-
-	if (shouldTerminate) {
-		visualizer->shutdown();
-		THROW_EXCEPTION("Shutdown visualizer message received.");
-	}
+	visualUpdate();
 #endif
 	if (publish_transforms)
 	//if (true)
@@ -264,7 +292,7 @@ void BasicModelVisualizer::update(const SimTK::Vector& q,
 	}
 }
 
-void BasicModelVisualizer::updateReactionForceDecorator(
+void ModelObserver::updateReactionForceDecorator(
 		const SimTK::Vector_<SimTK::SpatialVec>& reactionWrench, const string& reactionOnBody,
 		ForceDecorator* reactionForceDecorator) {
 	auto bodyIndex = model.getBodySet().getIndex(reactionOnBody, 0);
@@ -281,7 +309,7 @@ void BasicModelVisualizer::addDecorationGenerator(
 #endif
 }
 
-void BasicModelVisualizer::expressPositionInGround(
+void ModelObserver::expressPositionInGround(
 		const std::string& fromBodyName, const SimTK::Vec3& fromBodyPoint,
 		SimTK::Vec3& toBodyPoint) {
 #ifndef CONTINUOUS_INTEGRATION
@@ -300,7 +328,7 @@ void BasicModelVisualizer::expressPositionInGround(
 	}
 #endif // CONTINUOUS_INTEGRATION
 }
-void BasicModelVisualizer::expressPositionInAnotherFrame(
+void ModelObserver::expressPositionInAnotherFrame(
 		const std::string& fromBodyName, const SimTK::Vec3& fromBodyPoint,
 		const std::string& toBodyName, SimTK::Vec3& toBodyPoint) {
 #ifndef CONTINUOUS_INTEGRATION
