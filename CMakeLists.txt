@@ -4,7 +4,9 @@
 cmake_minimum_required(VERSION 3.0)
 project(opensimrt VERSION 1.0.2)
 
-find_package(OpenSim)
+list(APPEND CMAKE_PREFIX_PATH "/opt/dependencies")
+
+find_package(OpenSim CONFIG REQUIRED)
 find_package(catkin REQUIRED COMPONENTS
        opensimrt_msgs
        roscpp
@@ -50,7 +52,7 @@ option(USE_UNITY_BUILD "Enable to speed up the building" OFF)
 #option(BUILD_VICON "Build Vicon streamer interface" OFF)
 
 # build IMU interface
-option(BUILD_IMU "Build IMU streamer interface" ON)
+option(BUILD_IMU "Build IMU streamer interface" OFF)
 
 # build code generation (example model moment arm)
 option(BUILD_MOMENT_ARM "Build code generated moment arm projects" OFF)
@@ -202,3 +204,4 @@ if(BUILD_MOMENT_ARM)
 endif()
 
 ################################################################################
+
