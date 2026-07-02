@@ -147,10 +147,10 @@ namespace OpenSimRT {
 			void refreshModel() override;
 			void addDecorationGenerator(SimTK::DecorationGenerator* generator);
 			void setVisualizer() override;
+			SimTK::ReferencePtr<SimTK::Visualizer> visualizer;
 		protected:
 			void visualUpdate() override;
 		private:
-			SimTK::ReferencePtr<SimTK::Visualizer> visualizer;
 			SimTK::ReferencePtr<SimTK::Visualizer::InputSilo> silo;
 			enum class MenuID { SIMULATION }; //// TODO: Add more Menus
 			enum class SimMenuItem { QUIT, TFS };  //// TODO: Add more functionalities
