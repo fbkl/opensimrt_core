@@ -126,7 +126,7 @@ namespace OpenSimRT {
 			std::string tf_prefix = "";
 			virtual void setVisualizer();
 		protected:
-			virtual void visualUpdate() {ROS_INFO("visualUpdate does nothing for modelObserver");};
+			virtual void visualUpdate() {ROS_INFO_ONCE("visualUpdate does nothing for modelObserver");};
 			const OpenSim::BodySet* bodies = nullptr;
 			OpenSim::Model model;
 			SimTK::State state;
