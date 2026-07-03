@@ -155,13 +155,18 @@ class RealTime_API InverseKinematics {
     getFrameFromMarkerData(int i, OpenSim::MarkerData& markerData,
                            const std::vector<std::string>& observationOrder,
                            bool isIMU);
+    
+
+
+	/// if we want to change the weights of the damn thing every loop then we also want these guys to be public
+
+    SimTK::ReferencePtr<SimTK::Markers> markerAssemblyConditions;
+    SimTK::ReferencePtr<SimTK::OrientationSensors> imuAssemblyConditions;
 
  private: /* private members */
     OpenSim::Model model;
     SimTK::State state;
     SimTK::ReferencePtr<SimTK::Assembler> assembler;
-    SimTK::ReferencePtr<SimTK::Markers> markerAssemblyConditions;
-    SimTK::ReferencePtr<SimTK::OrientationSensors> imuAssemblyConditions;
     bool assembled;
 };
 
