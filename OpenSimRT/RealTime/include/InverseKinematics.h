@@ -82,7 +82,7 @@ class RealTime_API InverseKinematics {
      * accuracy (1.0e-5). Reducing the value of constraint weight can
      * significantly reduce the delay.
      */
-    InverseKinematics(const OpenSim::Model& model,
+    InverseKinematics(OpenSim::Model* model,
                       const std::vector<MarkerTask>& markerTasks,
                       const std::vector<IMUTask>& imuTasks,
                       double constraintsWeight, double accuracy);
@@ -164,7 +164,7 @@ class RealTime_API InverseKinematics {
     SimTK::ReferencePtr<SimTK::OrientationSensors> imuAssemblyConditions;
 
  private: /* private members */
-    OpenSim::Model model;
+    OpenSim::Model* model;
     SimTK::State state;
     SimTK::ReferencePtr<SimTK::Assembler> assembler;
     bool assembled;

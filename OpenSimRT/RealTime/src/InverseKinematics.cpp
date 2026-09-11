@@ -38,14 +38,14 @@ using namespace OpenSimRT;
 
 /******************************************************************************/
 
-InverseKinematics::InverseKinematics(const OpenSim::Model& otherModel,
+InverseKinematics::InverseKinematics(OpenSim::Model* otherModel,
                                      const vector<MarkerTask>& markerTasks,
                                      const vector<IMUTask>& imuTasks,
                                      double constraintsWeight, double accuracy)
-        : model(*otherModel.clone()), assembled(false) {
+        : model(otherModel), assembled(false) {
     // initialize model and assembler
-    state = model.initSystem();
-    assembler = new SimTK::Assembler(model.getMultibodySystem());
+    state = model->initSystem();
+    assembler = new SimTK::Assembler(model->getMultibodySystem());
     assembler->setAccuracy(accuracy);
     // assembler->setErrorTolerance(1e-3);
     assembler->setSystemConstraintsWeight(constraintsWeight);
@@ -54,13 +54,13 @@ InverseKinematics::InverseKinematics(const OpenSim::Model& otherModel,
     markerAssemblyConditions = new SimTK::Markers();
     SimTK::Array_<string> markerObservationOrder;
     for (const auto& task : markerTasks) {
-        int markerIndex = model.getMarkerSet().getIndex(task.marker);
+        int markerIndex = model->getMarkerSet().getIndex(task.marker);
         if (markerIndex < 0) {
             THROW_EXCEPTION("marker: " + task.marker +
                             " does not exist in the "
                             "model");
         }
-        const auto& marker = model.getMarkerSet()[markerIndex];
+        const auto& marker = model->getMarkerSet()[markerIndex];
         const auto& mobod = marker.getParentFrame().getMobilizedBody();
         markerAssemblyConditions->addMarker(task.name, mobod,
                                             marker.get_location(), task.weight);
@@ -75,11 +75,11 @@ InverseKinematics::InverseKinematics(const OpenSim::Model& otherModel,
     imuAssemblyConditions = new SimTK::OrientationSensors();
     SimTK::Array_<string> imuObservationOrder;
     for (const auto& task : imuTasks) {
-        int bodyIndex = model.getBodySet().getIndex(task.body);
+        int bodyIndex = model->getBodySet().getIndex(task.body);
         if (bodyIndex < 0) {
             THROW_EXCEPTION("body: " + task.body + " does not exist in model");
         }
-        const auto& body = model.getBodySet()[bodyIndex];
+        const auto& body = model->getBodySet()[bodyIndex];
         const auto& mobod = body.getMobilizedBody();
         imuAssemblyConditions->addOSensor(
                 task.name, mobod, task.orientation, // orientationInB = R_BS
@@ -111,7 +111,7 @@ InverseKinematics::Output InverseKinematics::solve(const Input& input) {
 
 TimeSeriesTable InverseKinematics::initializeLogger() {
     auto columnNames =
-            OpenSimUtils::getCoordinateNamesInMultibodyTreeOrder(model);
+            OpenSimUtils::getCoordinateNamesInMultibodyTreeOrder(*model);
 
     TimeSeriesTable q;
     q.setColumnLabels(columnNames);

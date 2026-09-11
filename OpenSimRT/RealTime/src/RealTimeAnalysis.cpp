@@ -58,7 +58,7 @@ RealTimeAnalysis::RealTimeAnalysis(
 
     // ik
     inverseKinematics = new InverseKinematics(
-            model, parameters.ikMarkerTasks, parameters.ikIMUTasks,
+            &model, parameters.ikMarkerTasks, parameters.ikIMUTasks,
             parameters.ikConstraintsWeight, parameters.ikAccuracy);
 
     // id
