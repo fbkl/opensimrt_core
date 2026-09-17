@@ -83,9 +83,12 @@ class RealTime_API InverseKinematics {
      * significantly reduce the delay.
      */
     InverseKinematics(OpenSim::Model* model,
+		      const SimTK::State& state,
                       const std::vector<MarkerTask>& markerTasks,
                       const std::vector<IMUTask>& imuTasks,
                       double constraintsWeight, double accuracy);
+
+
     /**
      * Track an input frame (marker and/or IMU target positions/orientation).
      */
@@ -166,7 +169,7 @@ class RealTime_API InverseKinematics {
  private: /* private members */
     OpenSim::Model* model;
     SimTK::State state;
-    SimTK::ReferencePtr<SimTK::Assembler> assembler;
+    std::unique_ptr<SimTK::Assembler> assembler;
     bool assembled;
 };
 

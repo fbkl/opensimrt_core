@@ -57,8 +57,9 @@ RealTimeAnalysis::RealTimeAnalysis(
     lowPassFilter = new LowPassSmoothFilter(parameters.filterParameters);
 
     // ik
+    auto state = model.initSystem();
     inverseKinematics = new InverseKinematics(
-            &model, parameters.ikMarkerTasks, parameters.ikIMUTasks,
+            &model, state, parameters.ikMarkerTasks, parameters.ikIMUTasks,
             parameters.ikConstraintsWeight, parameters.ikAccuracy);
 
     // id

@@ -39,13 +39,15 @@ using namespace OpenSimRT;
 /******************************************************************************/
 
 InverseKinematics::InverseKinematics(OpenSim::Model* otherModel,
+				     const SimTK::State& state_, // okay we want to get the state in which the model is in, which may be, idk, whatever and we will own it
                                      const vector<MarkerTask>& markerTasks,
                                      const vector<IMUTask>& imuTasks,
                                      double constraintsWeight, double accuracy)
         : model(otherModel), assembled(false) {
     // initialize model and assembler
-    state = model->initSystem();
-    assembler = new SimTK::Assembler(model->getMultibodySystem());
+    //state = model->initSystem();
+    state = state_;
+    assembler = std::make_unique<SimTK::Assembler>(model->getMultibodySystem());
     assembler->setAccuracy(accuracy);
     // assembler->setErrorTolerance(1e-3);
     assembler->setSystemConstraintsWeight(constraintsWeight);
