@@ -9,6 +9,7 @@
 #include <message_filters/subscriber.h>
 #include <Ros/include/saver_node.h>
 #include <OpenSim/Simulation/Model/Model.h>
+#include "std_msgs/Bool.h"
 
 namespace Ros
 {
@@ -45,6 +46,7 @@ namespace Ros
 			message_filters::Subscriber<opensimrt_msgs::CommonTimed> sub;
 			message_filters::Subscriber<opensimrt_msgs::PosVelAccTimed> sub_filtered;
 
+			
 			ros::Publisher pub; //output
 			ros::Publisher pub_filtered; //output, but filtered
 			bool publish_filtered = false;
@@ -59,8 +61,13 @@ namespace Ros
 			}
 			Reshuffler input, output;
 		protected:
+			void ready();
+
 			ros::ServiceServer outLabelsSrv;
 			bool outLabels(opensimrt_msgs::LabelsSrv::Request & req, opensimrt_msgs::LabelsSrv::Response& res );
+		private:
+
+			ros::Publisher ready_pub; // not a state machine, but like this readiness flag we need
 	};
 	template <typename T> std::vector<int> find_matches(std::vector<T> desired, std::vector<T> shuffled)
 	{

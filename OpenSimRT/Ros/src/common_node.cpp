@@ -82,6 +82,9 @@ void Ros::CommonNode::setModel(OpenSim::Model * model)
 
 void Ros::CommonNode::onInit(int num_sinks)
 {
+	ready_pub = nh.advertise<std_msgs::Bool>("ready",1,true); // we want this dude to be latched! also, this is ROS2 stuff
+	std_msgs::Bool m; m.data=false;
+	ready_pub.publish(m);
 	pub = n.advertise<opensimrt_msgs::CommonTimed>("output", 1000);
 	if (publish_filtered)
 		pub_filtered = n.advertise<opensimrt_msgs::PosVelAccTimed>("output_filtered", 1000);
@@ -152,4 +155,11 @@ bool Ros::CommonNode::outLabels(opensimrt_msgs::LabelsSrv::Request & req, opensi
 	return true;
 }
 
+void Ros::CommonNode::ready()
+{
+	std_msgs::Bool m; m.data=true;
+	ready_pub.publish(m);
+	
 
+
+}
