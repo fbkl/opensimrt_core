@@ -155,11 +155,20 @@ bool Ros::CommonNode::outLabels(opensimrt_msgs::LabelsSrv::Request & req, opensi
 	return true;
 }
 
-void Ros::CommonNode::ready()
+void Ros::CommonNode::set_ready()
 {
-	std_msgs::Bool m; m.data=true;
-	ready_pub.publish(m);
-	
-
-
+	node_ready=true;
+	pubready_state();	
 }
+void Ros::CommonNode::set_notready()
+{
+	node_ready=false;
+	pubready_state();	
+}
+void Ros::CommonNode::pubready_state()
+{
+	std_msgs::Bool m; m.data=node_ready;
+	ready_pub.publish(m);
+}
+
+

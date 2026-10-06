@@ -61,13 +61,16 @@ namespace Ros
 			}
 			Reshuffler input, output;
 		protected:
-			void ready();
+			void set_ready();
+			void set_notready();
+			void pubready_state();
 
 			ros::ServiceServer outLabelsSrv;
 			bool outLabels(opensimrt_msgs::LabelsSrv::Request & req, opensimrt_msgs::LabelsSrv::Response& res );
 		private:
 
 			ros::Publisher ready_pub; // not a state machine, but like this readiness flag we need
+			std::atomic<bool> node_ready;
 	};
 	template <typename T> std::vector<int> find_matches(std::vector<T> desired, std::vector<T> shuffled)
 	{
