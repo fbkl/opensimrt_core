@@ -4,6 +4,7 @@
 #include "ros/service_client.h"
 #include "ros/service_server.h"
 #include <Common/TimeSeriesTable.h>
+#include <Common/FileAdapter.h>
 #include <OpenSim/Common/STOFileAdapter.h>
 #include <OpenSim/Common/CSVFileAdapter.h>
 #include <memory>
@@ -46,16 +47,6 @@ Ros::SaverNode::~SaverNode()
 }
 
 
-void Ros::SaverNode::initializeLoggers(std::string logger_name, OpenSim::TimeSeriesTable *logger)
-{
-	//adds loggers to loggers
-	//ROS_ERROR_STREAM("initialization not implemented!");
-	at_least_one_logger_initialized = true;
-	ROS_INFO_STREAM("At least one logger was initialized! Will be able to save this with service");
-	NamedTable this_named_table = std::make_pair(logger,logger_name);	
-	loggers.push_back(this_named_table);
-
-}
 bool Ros::SaverNode::startRecording(std_srvs::Empty::Request &req, std_srvs::Empty::Response &res)
 {
 	ROS_INFO_STREAM("startRecording service called.");
@@ -91,46 +82,44 @@ bool Ros::SaverNode::writeSto(std_srvs::Empty::Request &req, std_srvs::Empty::Re
 }
 void Ros::SaverNode::clearLoggers()
 {
-	for(NamedTable named_table:loggers)
+	for(auto& named_table:loggers)
 	{
-		//auto these_column_labels = named_table.first->getColumnLabels();
-		ROS_WARN_STREAM("num_rows of table:" << named_table.first->getNumRows());
-		//delete(named_table.first->updDependentColumn);
-		//
-		while(named_table.first->getNumRows() >0)
-			named_table.first->removeRowAtIndex(0);
-
-		//named_table.first = new OpenSim::TimeSeriesTable;
-		//named_table.first->setColumnLabels(these_column_labels);
-		ROS_WARN_STREAM("num_rows of table after deletion:" << named_table.first->getNumRows());
+		ROS_WARN_STREAM("num_rows of table " << named_table->name << ": "
+				<< named_table->absTable()->getNumRows());
+		named_table->clear();
+		ROS_WARN_STREAM("num_rows of table after deletion:"
+				<< named_table->absTable()->getNumRows());
 	}
 }
 void Ros::SaverNode::saveStos()
 {
-
-	for(NamedTable named_table:loggers)
+	for(auto& named_table:loggers)
 	{
-		auto loggerfilename = data_save_filename()+std::to_string(recording_count)+named_table.second+".sto";
-		//loggerfilename = resolve_file(data_save_dir(),loggerfilename);
+		auto loggerfilename = data_save_filename()+std::to_string(recording_count)+named_table->name+".sto";
 		loggerfilename = resolved_file_prefix+ loggerfilename;
 		ROS_INFO_STREAM("trying to save: " << loggerfilename);
-		OpenSim::STOFileAdapter::write(*named_table.first, loggerfilename);
+		// NOT FileAdapter::writeFile: that looks the adapter up by extension and
+		// then needs the table to be the type that adapter was built for. The
+		// virtual knows its own type, so it calls STOFileAdapter_<T> directly.
+		//this throws if you do it twice, so second save will crash
+		//named_table->absTable()->addTableMetaData("notes",notes);
+		//named_table->absTable()->addTableMetaData("description",description);
+		named_table->writeSto(loggerfilename);
 	}
 }
 void Ros::SaverNode::saveCsvs()
 {
-	for(NamedTable named_table:loggers)
+	for(auto& named_table:loggers)
 	{
-		auto loggerfilename = data_save_filename()+std::to_string(recording_count)+named_table.second+".csv";
-		//loggerfilename = resolve_file(data_save_dir(),loggerfilename);
+		auto loggerfilename = data_save_filename()+std::to_string(recording_count)+named_table->name+".csv";
 		loggerfilename = resolved_file_prefix+ loggerfilename;
 		ROS_INFO_STREAM("trying to save: " << loggerfilename);
-		named_table.first->addTableMetaData("notes",notes);
-		named_table.first->addTableMetaData("description",description);
-
-		OpenSim::CSVFileAdapter::write(*named_table.first, loggerfilename);
+		
+		//this throws if you do it twice, so second save will crash
+		//named_table->absTable()->addTableMetaData("notes",notes);
+		//named_table->absTable()->addTableMetaData("description",description);
+		named_table->writeCsv(loggerfilename);
 	}
-
 }
 
 bool Ros::SaverNode::setNamePath(opensimrt_msgs::SetFileNameSrv::Request &req, opensimrt_msgs::SetFileNameSrv::Response &res)
@@ -144,6 +133,16 @@ bool Ros::SaverNode::setNamePath(opensimrt_msgs::SetFileNameSrv::Request &req, o
 	nh.setParam("data_save_file", filename);
 	notes = req.notes;
 	description = req.description;
+	// claude's suggestion was to set the table name here, instead of when we save it, which makes more sense actually
+	for(auto& named_table:loggers)
+	{
+		if(named_table->absTable()->hasTableMetaDataKey("notes"))
+			named_table->absTable()->removeTableMetaDataKey("notes");
+		if(named_table->absTable()->hasTableMetaDataKey("description"))
+			named_table->absTable()->removeTableMetaDataKey("description");
+		named_table->absTable()->addTableMetaData("notes",notes);
+		named_table->absTable()->addTableMetaData("description",description);
+	}
 	resolved_file_prefix = resolve_file_time(data_save_dir(),""); //sto data saved at the same time will have the same stamp
 	return true;
 
