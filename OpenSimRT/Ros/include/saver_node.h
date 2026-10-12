@@ -9,6 +9,7 @@
 #include <Common/TimeSeriesTable.h>
 #include <OpenSim/Common/STOFileAdapter.h>
 #include <OpenSim/Common/CSVFileAdapter.h>
+#include <OpenSim/Common/TRCFileAdapter.h>
 #include <boost/thread.hpp>
 #include <atomic>
 #include <memory>
@@ -17,7 +18,6 @@
 #include <memory>
 //idk whats going on
 #include "Settings.h"
-
 namespace Ros
 {
 	/** One logger: a table, plus the name it gets saved under.
@@ -47,7 +47,10 @@ namespace Ros
 			virtual void writeSto(const std::string& filename) = 0;
 			/// write the table to `filename` (extension included) as .csv
 			virtual void writeCsv(const std::string& filename) = 0;
+			
+			virtual void write(const std::string& filename) =0;
 	};
+
 
 	template<class T>
 	class NamedTable : public NamedTableBase
@@ -89,6 +92,13 @@ namespace Ros
 			}
 
 			void writeCsv(const std::string& filename) override;
+			// we set a default write function, so we can just ask stuff to write and
+			// they will figure it out 
+			void write(const std::string& filename) override
+			{
+				writeSto(filename);
+			}
+
 	};
 
 	/// Generic case: OpenSim only ships a CSV adapter for double
@@ -108,6 +118,25 @@ namespace Ros
 	inline void NamedTable<double>::writeCsv(const std::string& filename)
 	{
 		OpenSim::CSVFileAdapter::write(*table, filename);
+	}
+	
+	template<>
+	inline void NamedTable<SimTK::Vec3>::write(const std::string& filename)
+	{
+		if(!absTable()->hasTableMetaDataKey("Units"))
+		{
+			std::string freaking_unit{"m"};
+			table->addTableMetaData("Units",freaking_unit);
+		}
+		if(!absTable()->hasTableMetaDataKey("DataRate"))
+		{
+			std::string message{"DO NOT IGNORE THIS MESSAGE: you didnt set the data rate, so i invented one, otherwise you would lose this trial data!!!!!\nPlease fix the code!!!!"}; 
+			ROS_ERROR_STREAM(message);
+			std::string rate{"100"};
+			absTable()->addTableMetaData("DataRate",rate);
+		}
+		OpenSim::TRCFileAdapter::write(*table, filename);
+
 	}
 
 	using NamedTables = std::vector<std::unique_ptr<NamedTableBase>>;
