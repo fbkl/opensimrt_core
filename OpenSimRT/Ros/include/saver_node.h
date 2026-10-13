@@ -37,6 +37,8 @@ namespace Ros
 
 			std::string name;
 
+			virtual std::string extension() = 0;
+
 			/// read-only-ish view, for the things AbstractDataTable answers by itself
 			/// (getNumRows, column labels, table metadata)
 			virtual OpenSim::AbstractDataTable* absTable() = 0;
@@ -47,13 +49,13 @@ namespace Ros
 			virtual void writeSto(const std::string& filename) = 0;
 			/// write the table to `filename` (extension included) as .csv
 			virtual void writeCsv(const std::string& filename) = 0;
-			
+
 			virtual void write(const std::string& filename) =0;
 	};
 
 
 	template<class T>
-	class NamedTable : public NamedTableBase
+		class NamedTable : public NamedTableBase
 	{
 		public:
 			NamedTable(std::string logger_name, OpenSim::TimeSeriesTable_<T>* t)
@@ -65,6 +67,8 @@ namespace Ros
 			OpenSim::TimeSeriesTable_<T>* table = nullptr;
 
 			OpenSim::AbstractDataTable* absTable() override { return table; }
+
+			std::string extension() override;
 
 			void clear() override
 			{
@@ -106,39 +110,48 @@ namespace Ros
 	/// Quaternion table cannot be written as CSV. Say so and write the .sto
 	/// instead of throwing halfway through a save.
 	template<class T>
-	void NamedTable<T>::writeCsv(const std::string& filename)
-	{
-		ROS_WARN_STREAM_ONCE("No CSV adapter exists in OpenSim for this table's element "
-				"type, so [" << filename << "] will be written as .sto instead.");
-		OpenSim::STOFileAdapter_<T>::write(*table, filename + ".sto");
-	}
+		void NamedTable<T>::writeCsv(const std::string& filename)
+		{
+			ROS_WARN_STREAM_ONCE("No CSV adapter exists in OpenSim for this table's element "
+					"type, so [" << filename << "] will be written as .sto instead.");
+			OpenSim::STOFileAdapter_<T>::write(*table, filename + ".sto" );
+		}
+	template<class T>
+		std::string NamedTable<T>::extension()
+		{
+			return std::string(".sto");
+		}
 
 	/// double is the one element type with a real CSV adapter.
 	template<>
-	inline void NamedTable<double>::writeCsv(const std::string& filename)
-	{
-		OpenSim::CSVFileAdapter::write(*table, filename);
-	}
-	
+		inline void NamedTable<double>::writeCsv(const std::string& filename)
+		{
+			OpenSim::CSVFileAdapter::write(*table, filename);
+		}
 	template<>
-	inline void NamedTable<SimTK::Vec3>::write(const std::string& filename)
-	{
-		if(!absTable()->hasTableMetaDataKey("Units"))
+		inline std::string NamedTable<SimTK::Vec3>::extension()
 		{
-			std::string freaking_unit{"m"};
-			table->addTableMetaData("Units",freaking_unit);
+			return std::string(".trc");
 		}
-		if(!absTable()->hasTableMetaDataKey("DataRate"))
+
+	template<>
+		inline void NamedTable<SimTK::Vec3>::write(const std::string& filename)
 		{
-			std::string message{"DO NOT IGNORE THIS MESSAGE: you didnt set the data rate, so i invented one, otherwise you would lose this trial data!!!!!\nPlease fix the code!!!!"}; 
-			ROS_ERROR_STREAM(message);
-			std::string rate{"100"};
-			absTable()->addTableMetaData("DataRate",rate);
+			if(!absTable()->hasTableMetaDataKey("Units"))
+			{
+				std::string freaking_unit{"m"};
+				table->addTableMetaData("Units",freaking_unit);
+			}
+			if(!absTable()->hasTableMetaDataKey("DataRate"))
+			{
+				std::string message{"DO NOT IGNORE THIS MESSAGE: you didnt set the data rate, so i invented one, otherwise you would lose this trial data!!!!!\nPlease fix the code!!!!"}; 
+				ROS_ERROR_STREAM(message);
+				std::string rate{"100"};
+				absTable()->addTableMetaData("DataRate",rate);
+			}
+			OpenSim::TRCFileAdapter::write(*table, filename);
+
 		}
-		OpenSim::TRCFileAdapter::write(*table, filename);
-
-	}
-
 	using NamedTables = std::vector<std::unique_ptr<NamedTableBase>>;
 
 	class SaverNode
@@ -174,14 +187,16 @@ namespace Ros
 			};
 			void onInit();
 			bool at_least_one_logger_initialized = false;
+			void save();
 			void saveStos();
 			void saveCsvs();
 			void clearLoggers();
-			ros::ServiceServer write_csv, write_sto;
+			ros::ServiceServer write_csv, write_sto, write_all;
 		protected:
 			ros::ServiceServer startRecordingSrv, stopRecordingSrv, clearLoggersSrv, setNamePathSrv;
 			bool writeCsv(std_srvs::Empty::Request &req, std_srvs::Empty::Response &res);
 			bool writeSto(std_srvs::Empty::Request &req, std_srvs::Empty::Response &res);
+			bool write(std_srvs::Empty::Request &req, std_srvs::Empty::Response &res);
 			bool startRecording(std_srvs::Empty::Request &req, std_srvs::Empty::Response &res);
 			bool stopRecording(std_srvs::Empty::Request &req, std_srvs::Empty::Response &res);
 			bool clearLoggers(std_srvs::Empty::Request &req, std_srvs::Empty::Response &res);

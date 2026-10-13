@@ -20,6 +20,7 @@ void Ros::SaverNode::onInit()
 {
 	write_csv = nh.advertiseService("write_csv", &SaverNode::writeCsv, this);
 	write_sto = nh.advertiseService("write_sto", &SaverNode::writeSto, this);
+	write_all = nh.advertiseService("write", &SaverNode::write, this);
 	
 	startRecordingSrv 	= nh.advertiseService("start_recording", 	&SaverNode::startRecording, this);
 	stopRecordingSrv 	= nh.advertiseService("stop_recording", 	&SaverNode::stopRecording, this);
@@ -80,6 +81,12 @@ bool Ros::SaverNode::writeSto(std_srvs::Empty::Request &req, std_srvs::Empty::Re
 	saveStos();
 	return true;
 }
+bool Ros::SaverNode::write(std_srvs::Empty::Request &req, std_srvs::Empty::Response &res)
+{
+	ROS_INFO_STREAM("Write service called.");
+	save();
+	return true;
+}
 void Ros::SaverNode::clearLoggers()
 {
 	for(auto& named_table:loggers)
@@ -89,6 +96,16 @@ void Ros::SaverNode::clearLoggers()
 		named_table->clear();
 		ROS_WARN_STREAM("num_rows of table after deletion:"
 				<< named_table->absTable()->getNumRows());
+	}
+}
+void Ros::SaverNode::save() // newer method that chooses how to save
+{
+	for(auto& named_table:loggers)
+	{
+		auto loggerfilename = data_save_filename()+std::to_string(recording_count)+named_table->name;
+		loggerfilename = resolved_file_prefix+ loggerfilename + named_table->extension();
+		ROS_INFO_STREAM("Trying to save: " << loggerfilename);
+		named_table->write(loggerfilename);
 	}
 }
 void Ros::SaverNode::saveStos()
